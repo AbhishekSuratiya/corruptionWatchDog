@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
+import ScrollToTop from './components/Layout/ScrollToTop';
 import Home from './pages/Home';
 import ReportForm from './pages/ReportForm';
 import Directory from './pages/Directory';
@@ -14,6 +15,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
+        <ScrollToTop />
         <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
         <main className="flex-1">
           <Routes>

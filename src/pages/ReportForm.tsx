@@ -26,7 +26,15 @@ export default function ReportForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   
-  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<ReportFormData>({
+  const { 
+    register, 
+    handleSubmit, 
+    watch, 
+    formState: { errors, isValid }, 
+    reset,
+    trigger
+  } = useForm<ReportFormData>({
+    mode: 'onChange', // This enables real-time validation
     defaultValues: {
       is_anonymous: true,
       approached_police: '',
@@ -50,13 +58,16 @@ export default function ReportForm() {
   }));
 
   const onSubmit = async (data: ReportFormData) => {
+    console.log('Form data being submitted:', data);
+    console.log('Form errors:', errors);
+    
     setIsSubmitting(true);
     
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('Report submitted:', data);
+      console.log('Report submitted successfully:', data);
       console.log('Files:', files);
       
       setIsSubmitted(true);
@@ -73,6 +84,13 @@ export default function ReportForm() {
     if (e.target.files) {
       setFiles(Array.from(e.target.files));
     }
+  };
+
+  // Debug function to check form state
+  const debugForm = () => {
+    console.log('Current form values:', watch());
+    console.log('Form errors:', errors);
+    console.log('Is form valid:', isValid);
   };
 
   if (isSubmitted) {
@@ -124,6 +142,17 @@ export default function ReportForm() {
           </p>
         </div>
 
+        {/* Debug Button - Remove in production */}
+        <div className="mb-4 text-center">
+          <button 
+            type="button" 
+            onClick={debugForm}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+          >
+            Debug Form (Check Console)
+          </button>
+        </div>
+
         {/* Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -162,14 +191,26 @@ export default function ReportForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Full Name *"
-                  {...register('corrupt_person_name', { required: 'Full name is required' })}
+                  {...register('corrupt_person_name', { 
+                    required: 'Full name is required',
+                    minLength: {
+                      value: 2,
+                      message: 'Name must be at least 2 characters'
+                    }
+                  })}
                   error={errors.corrupt_person_name?.message}
                   placeholder="Enter the corrupt person's full name"
                 />
                 
                 <Input
                   label="Designation/Job Title *"
-                  {...register('designation', { required: 'Designation is required' })}
+                  {...register('designation', { 
+                    required: 'Designation is required',
+                    minLength: {
+                      value: 2,
+                      message: 'Designation must be at least 2 characters'
+                    }
+                  })}
                   error={errors.designation?.message}
                   placeholder="e.g., Police Officer, Government Official"
                 />
@@ -193,7 +234,13 @@ export default function ReportForm() {
                 <div className="relative">
                   <Input
                     label="Area/Region *"
-                    {...register('area_region', { required: 'Area/Region is required' })}
+                    {...register('area_region', { 
+                      required: 'Area/Region is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Area must be at least 2 characters'
+                      }
+                    })}
                     error={errors.area_region?.message}
                     placeholder="Enter location where corruption occurred"
                   />
@@ -210,7 +257,13 @@ export default function ReportForm() {
 
               <Textarea
                 label="Detailed Description *"
-                {...register('description', { required: 'Description is required' })}
+                {...register('description', { 
+                  required: 'Description is required',
+                  minLength: {
+                    value: 10,
+                    message: 'Description must be at least 10 characters'
+                  }
+                })}
                 error={errors.description?.message}
                 placeholder="Provide a detailed account of the corruption incident..."
                 rows={6}

@@ -15,8 +15,8 @@ interface ReportFormData {
   area_region: string;
   description: string;
   category: string;
-  approached_police: boolean;
-  was_resolved: boolean;
+  approached_police: string;
+  was_resolved: string;
   is_anonymous: boolean;
   reporter_name?: string;
   reporter_email?: string;
@@ -27,7 +27,13 @@ export default function ReportForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   
-  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<ReportFormData>();
+  const { register, handleSubmit, watch, formState: { errors }, reset } = useForm<ReportFormData>({
+    defaultValues: {
+      is_anonymous: true,
+      approached_police: '',
+      was_resolved: ''
+    }
+  });
   
   const isAnonymous = watch('is_anonymous');
 
@@ -324,14 +330,24 @@ export default function ReportForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input
                     label="Your Name"
-                    {...register('reporter_name')}
+                    {...register('reporter_name', {
+                      required: !isAnonymous ? 'Name is required for non-anonymous reports' : false
+                    })}
+                    error={errors.reporter_name?.message}
                     placeholder="Enter your full name"
                   />
                   
                   <Input
                     label="Your Email"
                     type="email"
-                    {...register('reporter_email')}
+                    {...register('reporter_email', {
+                      required: !isAnonymous ? 'Email is required for non-anonymous reports' : false,
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Invalid email address'
+                      }
+                    })}
+                    error={errors.reporter_email?.message}
                     placeholder="Enter your email address"
                     helperText="We'll use this to contact you for updates"
                   />

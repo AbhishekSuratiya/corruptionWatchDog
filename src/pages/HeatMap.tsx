@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Map, TrendingUp, AlertTriangle, BarChart3, MapPin, Layers, Zap } from 'lucide-react';
 import { RegionStats } from '../types';
 import { SEVERITY_COLORS, CORRUPTION_CATEGORIES } from '../lib/constants';
+import { DatabaseService } from '../lib/database';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 import FloatingCard from '../components/UI/FloatingCard';
 import 'leaflet/dist/leaflet.css';
@@ -16,34 +17,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-// Modern gradient colors for regions
-const REGION_GRADIENTS = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
-];
-
-// Modern color palette for corruption types
-const MODERN_COLORS = [
-  '#FF6B6B', // Coral Red
-  '#4ECDC4', // Turquoise
-  '#45B7D1', // Sky Blue
-  '#96CEB4', // Mint Green
-  '#FFEAA7', // Warm Yellow
-  '#DDA0DD', // Plum
-  '#98D8C8', // Seafoam
-  '#F7DC6F', // Golden Yellow
-  '#BB8FCE', // Lavender
-  '#85C1E9', // Light Blue
-  '#F8C471', // Peach
-  '#82E0AA'  // Light Green
-];
 
 // India-specific map styles
 const INDIA_MAP_STYLES = {
@@ -59,42 +32,53 @@ export default function HeatMap() {
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
   const [mapStyle, setMapStyle] = useState<keyof typeof INDIA_MAP_STYLES>('modern');
 
   useEffect(() => {
-    // Simulate API calls for map and chart data with India-specific cities
-    const timer = setTimeout(() => {
-      const mockRegionData: RegionStats[] = [
-        { region: 'Mumbai', count: 45, latitude: 19.0760, longitude: 72.8777, severity: 'critical' },
-        { region: 'Delhi', count: 38, latitude: 28.6139, longitude: 77.2090, severity: 'high' },
-        { region: 'Bangalore', count: 32, latitude: 12.9716, longitude: 77.5946, severity: 'high' },
-        { region: 'Chennai', count: 28, latitude: 13.0827, longitude: 80.2707, severity: 'medium' },
-        { region: 'Kolkata', count: 25, latitude: 22.5726, longitude: 88.3639, severity: 'medium' },
-        { region: 'Hyderabad', count: 22, latitude: 17.3850, longitude: 78.4867, severity: 'medium' },
-        { region: 'Pune', count: 18, latitude: 18.5204, longitude: 73.8567, severity: 'low' },
-        { region: 'Ahmedabad', count: 15, latitude: 23.0225, longitude: 72.5714, severity: 'low' },
-        { region: 'Jaipur', count: 12, latitude: 26.9124, longitude: 75.7873, severity: 'low' },
-        { region: 'Lucknow', count: 10, latitude: 26.8467, longitude: 80.9462, severity: 'low' },
-        { region: 'Bhopal', count: 8, latitude: 23.2599, longitude: 77.4126, severity: 'low' },
-        { region: 'Patna', count: 7, latitude: 25.5941, longitude: 85.1376, severity: 'low' }
-      ];
+    fetchHeatMapData();
+  }, []);
 
-      const mockCategoryData = Object.entries(CORRUPTION_CATEGORIES).map(([key, label], index) => ({
-        name: label,
-        value: Math.floor(Math.random() * 50) + 10,
-        color: MODERN_COLORS[index % MODERN_COLORS.length],
-        key: key
+  const fetchHeatMapData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch real data from database
+      const { regionData: dbRegionData, categoryData: dbCategoryData, error: dbError } = await DatabaseService.getHeatMapData();
+      
+      if (dbError) {
+        throw new Error(dbError.message || 'Failed to fetch heat map data');
+      }
+
+      // Transform database data to match component interface
+      const transformedRegionData: RegionStats[] = dbRegionData.map(item => ({
+        region: item.region,
+        count: item.count,
+        latitude: item.latitude || 0,
+        longitude: item.longitude || 0,
+        severity: item.severity
       }));
 
-      setRegionData(mockRegionData);
-      setCategoryData(mockCategoryData);
-      setIsLoading(false);
-    }, 1500);
+      // If no real data exists, show a message but don't use mock data
+      if (transformedRegionData.length === 0) {
+        console.log('No corruption reports found in database yet');
+      }
 
-    return () => clearTimeout(timer);
-  }, []);
+      setRegionData(transformedRegionData);
+      setCategoryData(dbCategoryData);
+
+    } catch (err) {
+      console.error('Error fetching heat map data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load heat map data');
+      setRegionData([]);
+      setCategoryData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getMarkerSize = (count: number) => {
     if (count >= 40) return 30;
@@ -231,9 +215,30 @@ export default function HeatMap() {
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Real-time visualization of corruption density across Indian states and cities. 
-            Identify hotspots and track trends in your region.
+            Data sourced directly from our corruption reports database.
           </p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <FloatingCard className="mb-8 bg-red-50 border-2 border-red-200">
+            <div className="p-6">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div>
+                  <h3 className="text-lg font-semibold text-red-800">Error Loading Data</h3>
+                  <p className="text-red-700">{error}</p>
+                  <button 
+                    onClick={fetchHeatMapData}
+                    className="mt-2 text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          </FloatingCard>
+        )}
 
         {/* Stats Overview - Data Driven */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -286,7 +291,7 @@ export default function HeatMap() {
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-green-600 mb-2">
-                  {Math.round((regionData.reduce((sum, region) => sum + region.count, 0) / regionData.length) * 100) / 100}
+                  {regionData.length > 0 ? Math.round((regionData.reduce((sum, region) => sum + region.count, 0) / regionData.length) * 100) / 100 : 0}
                 </div>
                 <div className="text-gray-600 font-medium">Avg per City</div>
               </FloatingCard>
@@ -327,11 +332,11 @@ export default function HeatMap() {
                 <div className="mt-3 flex items-center space-x-4 text-sm text-gray-600">
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Focused on Indian cities</span>
+                    <span>Real database data</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span>Real-time data</span>
+                    <span>Live updates</span>
                   </div>
                 </div>
               </div>
@@ -341,7 +346,16 @@ export default function HeatMap() {
                   <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Loading India map...</p>
+                      <p className="text-gray-600">Loading real data from database...</p>
+                    </div>
+                  </div>
+                ) : regionData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                    <div className="text-center p-8">
+                      <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-700 mb-2">No Data Available</h3>
+                      <p className="text-gray-500 mb-4">No corruption reports have been submitted yet.</p>
+                      <p className="text-sm text-gray-400">Submit your first report to see data on the map!</p>
                     </div>
                   </div>
                 ) : (
@@ -363,7 +377,7 @@ export default function HeatMap() {
                           : '&copy; CartoDB &copy; OpenStreetMap contributors'
                       }
                     />
-                    {regionData.map((region) => (
+                    {regionData.filter(region => region.latitude && region.longitude).map((region) => (
                       <CircleMarker
                         key={region.region}
                         center={[region.latitude, region.longitude]}
@@ -402,7 +416,7 @@ export default function HeatMap() {
                               {region.severity.toUpperCase()} RISK
                             </span>
                             <div className="mt-2 text-xs text-gray-500">
-                              Click for detailed view
+                              Real data from database
                             </div>
                           </div>
                         </Popup>
@@ -450,6 +464,14 @@ export default function HeatMap() {
               {isLoading ? (
                 <div className="h-64 flex items-center justify-center">
                   <SkeletonLoader className="w-full h-full" />
+                </div>
+              ) : regionData.length === 0 ? (
+                <div className="h-64 flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No regional data available</p>
+                    <p className="text-sm text-gray-400">Submit reports to see city statistics</p>
+                  </div>
                 </div>
               ) : (
                 <div className="relative">
@@ -529,6 +551,14 @@ export default function HeatMap() {
                 <div className="h-64 flex items-center justify-center">
                   <SkeletonLoader variant="circular" className="w-32 h-32 mx-auto" />
                 </div>
+              ) : categoryData.length === 0 ? (
+                <div className="h-64 flex items-center justify-center">
+                  <div className="text-center">
+                    <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No category data available</p>
+                    <p className="text-sm text-gray-400">Submit reports to see corruption types</p>
+                  </div>
+                </div>
               ) : (
                 <div className="relative">
                   <ResponsiveContainer width="100%" height={280}>
@@ -599,7 +629,7 @@ export default function HeatMap() {
         <FloatingCard className="mt-8 overflow-hidden" delay={700}>
           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <h2 className="text-xl font-semibold text-gray-900">Indian Cities Statistics</h2>
-            <p className="text-sm text-gray-600 mt-1">Detailed breakdown of corruption reports across major Indian cities</p>
+            <p className="text-sm text-gray-600 mt-1">Real-time data from corruption reports database</p>
           </div>
           <div className="overflow-x-auto">
             {isLoading ? (
@@ -612,6 +642,13 @@ export default function HeatMap() {
                     <SkeletonLoader className="w-32 h-4" />
                   </div>
                 ))}
+              </div>
+            ) : regionData.length === 0 ? (
+              <div className="p-12 text-center">
+                <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Regional Data</h3>
+                <p className="text-gray-500 mb-4">No corruption reports have been submitted yet.</p>
+                <p className="text-sm text-gray-400">Be the first to report corruption in your area!</p>
               </div>
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
@@ -627,7 +664,7 @@ export default function HeatMap() {
                       Risk Level
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Trend
+                      Data Source
                     </th>
                   </tr>
                 </thead>
@@ -658,8 +695,8 @@ export default function HeatMap() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center">
-                          <TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-                          +{Math.floor(Math.random() * 20)}% this month
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                          Database (Live)
                         </div>
                       </td>
                     </tr>
@@ -679,17 +716,15 @@ export default function HeatMap() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-orange-800 mb-3">
-                  High-Risk Areas in India
+                  Real-Time Data from Database
                 </h3>
                 <p className="text-orange-700 leading-relaxed mb-3">
-                  The cities marked in red show critical levels of corruption reports across India. 
-                  Major metropolitan areas like Mumbai, Delhi, and Bangalore require immediate attention 
-                  from anti-corruption agencies.
+                  This heat map displays live data directly from our Supabase database. All corruption reports 
+                  submitted through our platform are automatically processed and visualized here in real-time.
                 </p>
                 <p className="text-orange-700 leading-relaxed">
-                  <strong>Note:</strong> This data represents reported incidents and may not reflect the complete 
-                  picture of corruption in these regions. Citizens are encouraged to report any suspicious 
-                  activities to help build a more transparent India.
+                  <strong>Data Source:</strong> Supabase PostgreSQL database with real-time updates. 
+                  Last refreshed: {new Date().toLocaleString()}
                 </p>
               </div>
             </div>

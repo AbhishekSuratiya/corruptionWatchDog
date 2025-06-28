@@ -98,8 +98,8 @@ export default function Home() {
                   className="w-full sm:w-auto bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 font-bold px-10 py-5 text-lg shadow-2xl hover:shadow-yellow-500/25"
                   glow
                 >
-                  <Zap className="w-5 h-5 mr-2" />
-                  Report Corruption Now
+                  <Zap className="w-5 h-5" />
+                  <span>Report Corruption Now</span>
                 </GradientButton>
               </Link>
               <Link to="/directory">
@@ -108,8 +108,8 @@ export default function Home() {
                   size="lg" 
                   className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white/20 px-10 py-5 text-lg"
                 >
-                  <Eye className="w-5 h-5 mr-2" />
-                  View Directory
+                  <Eye className="w-5 h-5" />
+                  <span>View Directory</span>
                 </GradientButton>
               </Link>
             </div>
@@ -219,8 +219,8 @@ export default function Home() {
                 className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 font-bold px-12 py-6 text-xl shadow-2xl hover:shadow-yellow-500/25 transform hover:scale-105"
                 glow
               >
-                <Shield className="w-6 h-6 mr-3" />
-                Start Your Report
+                <Shield className="w-6 h-6" />
+                <span>Start Your Report</span>
               </GradientButton>
             </Link>
           </div>

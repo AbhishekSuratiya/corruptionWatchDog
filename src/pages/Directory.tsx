@@ -252,12 +252,12 @@ export default function Directory() {
                   
                   <div className="flex space-x-3">
                     <GradientButton size="sm" className="flex-1 text-xs">
-                      <Flag className="h-3 w-3 mr-2" />
-                      View Reports
+                      <Flag className="h-3 w-3" />
+                      <span>View Reports</span>
                     </GradientButton>
                     <GradientButton variant="secondary" size="sm" className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
-                      <ExternalLink className="h-3 w-3 mr-2" />
-                      Report to Police
+                      <ExternalLink className="h-3 w-3" />
+                      <span>Report to Police</span>
                     </GradientButton>
                   </div>
                 </div>

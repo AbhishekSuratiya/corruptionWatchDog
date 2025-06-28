@@ -53,7 +53,7 @@ export default function GradientButton({
           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
       )}
-      <span className={clsx('relative z-10', isLoading && 'opacity-0')}>
+      <span className={clsx('relative z-10 flex items-center space-x-2', isLoading && 'opacity-0')}>
         {children}
       </span>
     </button>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import { Map, TrendingUp, AlertTriangle, BarChart3 } from 'lucide-react';
 import { RegionStats } from '../types';
 import { SEVERITY_COLORS, CORRUPTION_CATEGORIES } from '../lib/constants';
@@ -16,6 +16,18 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Modern gradient colors for regions
+const REGION_GRADIENTS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
+];
 
 // Modern color palette for corruption types
 const MODERN_COLORS = [
@@ -39,6 +51,7 @@ export default function HeatMap() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
   useEffect(() => {
     // Simulate API calls for map and chart data
@@ -88,6 +101,14 @@ export default function HeatMap() {
     setActiveIndex(null);
   };
 
+  const onBarEnter = (_: any, index: number) => {
+    setHoveredBar(index);
+  };
+
+  const onBarLeave = () => {
+    setHoveredBar(null);
+  };
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
@@ -99,6 +120,24 @@ export default function HeatMap() {
           </p>
           <p className="text-sm text-gray-600">
             Percentage: <span className="font-medium text-blue-600">{((data.value / categoryData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomBarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-4 shadow-xl">
+          <p className="font-semibold text-gray-900">{label}</p>
+          <p className="text-sm text-gray-600">
+            Reports: <span className="font-medium text-red-600">{data.value}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            Severity: <span className="font-medium text-orange-600 capitalize">{data.payload.severity}</span>
           </p>
         </div>
       );
@@ -125,6 +164,36 @@ export default function HeatMap() {
       >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
+    );
+  };
+
+  // Custom Bar Shape with Gradient
+  const CustomBar = (props: any) => {
+    const { fill, ...rest } = props;
+    const gradientId = `gradient-${rest.index}`;
+    const isHovered = hoveredBar === rest.index;
+    
+    return (
+      <g>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={fill} stopOpacity={1} />
+            <stop offset="100%" stopColor={fill} stopOpacity={0.6} />
+          </linearGradient>
+        </defs>
+        <rect
+          {...rest}
+          fill={`url(#${gradientId})`}
+          rx={6}
+          ry={6}
+          style={{
+            filter: isHovered ? 'brightness(1.1) drop-shadow(0 4px 12px rgba(0,0,0,0.15))' : 'none',
+            transform: isHovered ? 'scaleY(1.05)' : 'scaleY(1)',
+            transformOrigin: 'bottom',
+            transition: 'all 0.3s ease'
+          }}
+        />
+      </g>
     );
   };
 
@@ -266,7 +335,7 @@ export default function HeatMap() {
 
           {/* Charts - Data Driven */}
           <div className="space-y-8">
-            {/* Regional Bar Chart */}
+            {/* Modern Regional Chart */}
             <FloatingCard className="p-6" delay={500}>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
@@ -277,21 +346,70 @@ export default function HeatMap() {
                   <SkeletonLoader className="w-full h-full" />
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={regionData.slice(0, 6)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="region" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      fontSize={12}
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#dc2626" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart 
+                      data={regionData.slice(0, 6)}
+                      onMouseEnter={onBarEnter}
+                      onMouseLeave={onBarLeave}
+                    >
+                      <defs>
+                        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#dc2626" stopOpacity={0.8} />
+                          <stop offset="100%" stopColor="#dc2626" stopOpacity={0.1} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis 
+                        dataKey="region" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        fontSize={12}
+                        stroke="#64748b"
+                      />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip content={<CustomBarTooltip />} />
+                      <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="#dc2626"
+                        strokeWidth={3}
+                        fill="url(#areaGradient)"
+                        animationBegin={0}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  
+                  {/* Modern Legend */}
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    {regionData.slice(0, 6).map((region, index) => (
+                      <div 
+                        key={region.region} 
+                        className={`flex items-center space-x-2 p-2 rounded-lg transition-all duration-300 cursor-pointer ${
+                          hoveredBar === index ? 'bg-red-50 shadow-md' : 'hover:bg-gray-50'
+                        }`}
+                        onMouseEnter={() => setHoveredBar(index)}
+                        onMouseLeave={() => setHoveredBar(null)}
+                      >
+                        <div 
+                          className="w-3 h-3 rounded-full shadow-sm"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${getMarkerColor(region.severity)} 0%, ${getMarkerColor(region.severity)}80 100%)` 
+                          }}
+                        />
+                        <span className="text-gray-700 font-medium truncate">
+                          {region.region}
+                        </span>
+                        <span className="text-gray-500 text-xs ml-auto">
+                          {region.count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </FloatingCard>
 

@@ -106,7 +106,7 @@ export default function Home() {
       <section className="relative overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\\\"60\\\" height=\\\"60\\\" viewBox=\\\"0 0 60 60\\\" xmlns=\\\"http://www.w3.org/2000/svg\\\"%3E%3Cg fill=\\\"none\\\" fill-rule=\\\"evenodd\\\"%3E%3Cg fill=\\\"%23ffffff\\\" fill-opacity=\\\"0.05\\\"%3E%3Ccircle cx=\\\"30\\\" cy=\\\"30\\\" r=\\\"2\\\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.05%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
           <div className="absolute top-0 left-0 w-full h-full">
             <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/20 rounded-full blur-3xl animate-float"></div>
             <div className="absolute bottom-20 right-20 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float-delayed"></div>
@@ -225,7 +225,7 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\\\"40\\\" height=\\\"40\\\" viewBox=\\\"0 0 40 40\\\" xmlns=\\\"http://www.w3.org/2000/svg\\\"%3E%3Cg fill=\\\"%23ffffff\\\" fill-opacity=\\\"0.03\\\"%3E%3Cpath d=\\\"M20 20c0-11.046-8.954-20-20-20v20h20z\\\"/%3E%3C/g%3E%3C/svg%3E')]"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.03%22%3E%3Cpath d=%22M20 20c0-11.046-8.954-20-20-20v20h20z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float"></div>
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-yellow-500/20 rounded-full blur-3xl animate-float-delayed"></div>
         </div>

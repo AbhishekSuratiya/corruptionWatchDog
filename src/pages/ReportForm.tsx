@@ -12,7 +12,7 @@ interface ReportFormData {
   area_region: string;
   description: string;
   category: string;
-  approached_police: string;
+  approached_authorities: string;
   was_resolved: string;
   is_anonymous: boolean;
   reporter_name?: string;
@@ -35,7 +35,7 @@ export default function ReportForm() {
     mode: 'onChange',
     defaultValues: {
       is_anonymous: true,
-      approached_police: '',
+      approached_authorities: '',
       was_resolved: '',
       corrupt_person_name: '',
       designation: '',
@@ -68,7 +68,7 @@ export default function ReportForm() {
         area_region: data.area_region.trim(),
         description: data.description.trim(),
         category: data.category,
-        approached_police: data.approached_police === 'yes',
+        approached_police: data.approached_authorities === 'yes', // Keep database field name for compatibility
         was_resolved: data.was_resolved === 'yes',
         is_anonymous: data.is_anonymous,
         reporter_name: data.is_anonymous ? undefined : data.reporter_name?.trim(),
@@ -246,7 +246,7 @@ export default function ReportForm() {
                       }
                     })}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                    placeholder="e.g., Police Officer, Government Official"
+                    placeholder="e.g., Government Official, Manager, Inspector"
                   />
                   {errors.designation && (
                     <p className="text-sm text-red-600 mt-1">{errors.designation.message}</p>
@@ -360,23 +360,23 @@ export default function ReportForm() {
               </div>
             </div>
 
-            {/* Police Involvement */}
+            {/* Authorities Involvement */}
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                Police Involvement
+                Authorities Involvement
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Did you approach the police? *
+                    Did you approach any authorities or higher responsible person? *
                   </label>
                   <div className="space-y-2">
                     <label className="flex items-center">
                       <input
                         type="radio"
                         value="yes"
-                        {...register('approached_police', { required: 'Please select an option' })}
+                        {...register('approached_authorities', { required: 'Please select an option' })}
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
                       />
                       <span className="ml-2 text-gray-700">Yes</span>
@@ -385,20 +385,23 @@ export default function ReportForm() {
                       <input
                         type="radio"
                         value="no"
-                        {...register('approached_police', { required: 'Please select an option' })}
+                        {...register('approached_authorities', { required: 'Please select an option' })}
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
                       />
                       <span className="ml-2 text-gray-700">No</span>
                     </label>
                   </div>
-                  {errors.approached_police && (
-                    <p className="text-sm text-red-600 mt-1">{errors.approached_police.message}</p>
+                  {errors.approached_authorities && (
+                    <p className="text-sm text-red-600 mt-1">{errors.approached_authorities.message}</p>
                   )}
+                  <p className="text-sm text-gray-500 mt-2">
+                    This includes police, supervisors, anti-corruption agencies, or any higher authority
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Was it resolved? *
+                    Was the issue resolved? *
                   </label>
                   <div className="space-y-2">
                     <label className="flex items-center">

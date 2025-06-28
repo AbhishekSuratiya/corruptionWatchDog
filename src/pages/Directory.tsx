@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink } from 'lucide-react';
-import Button from '../components/UI/Button';
-import Input from '../components/UI/Input';
+import React, { useState, useEffect } from 'react';
+import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter } from 'lucide-react';
+import GradientButton from '../components/UI/GradientButton';
+import ModernInput from '../components/UI/ModernInput';
+import FloatingCard from '../components/UI/FloatingCard';
+import SkeletonLoader from '../components/UI/SkeletonLoader';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 
 interface DefaulterProfile {
@@ -18,6 +20,12 @@ interface DefaulterProfile {
 export default function Directory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Mock data - replace with actual API call
   const defaulters: DefaulterProfile[] = [
@@ -50,6 +58,36 @@ export default function Directory() {
       lastReported: '2024-01-20',
       categories: ['bribery', 'misuse_of_funds'],
       status: 'active'
+    },
+    {
+      id: '4',
+      name: 'Priya Sharma',
+      designation: 'Tax Inspector',
+      location: 'Chennai, Tamil Nadu',
+      reportCount: 12,
+      lastReported: '2024-01-18',
+      categories: ['extortion', 'fraud'],
+      status: 'active'
+    },
+    {
+      id: '5',
+      name: 'Michael Brown',
+      designation: 'Building Inspector',
+      location: 'Pune, Maharashtra',
+      reportCount: 6,
+      lastReported: '2024-01-12',
+      categories: ['bribery'],
+      status: 'resolved'
+    },
+    {
+      id: '6',
+      name: 'Anjali Patel',
+      designation: 'License Officer',
+      location: 'Ahmedabad, Gujarat',
+      reportCount: 19,
+      lastReported: '2024-01-22',
+      categories: ['nepotism', 'abuse_of_power', 'bribery'],
+      status: 'active'
     }
   ];
 
@@ -65,109 +103,144 @@ export default function Directory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-red-100 text-red-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'disputed': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-red-100 text-red-800 border-red-200';
+      case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
+      case 'disputed': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getBadgeColor = (count: number) => {
-    if (count >= 20) return 'bg-red-600 text-white';
-    if (count >= 10) return 'bg-orange-500 text-white';
-    return 'bg-yellow-500 text-white';
+    if (count >= 20) return 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25';
+    if (count >= 10) return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25';
+    return 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25';
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header Skeleton */}
+          <div className="text-center mb-12">
+            <SkeletonLoader variant="circular" className="w-16 h-16 mx-auto mb-6" />
+            <SkeletonLoader className="w-96 h-10 mx-auto mb-4" />
+            <SkeletonLoader variant="text" lines={2} className="max-w-3xl mx-auto" />
+          </div>
+
+          {/* Search Skeleton */}
+          <div className="mb-8">
+            <SkeletonLoader className="w-full h-20 rounded-2xl" />
+          </div>
+
+          {/* Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonLoader key={index} variant="card" className="h-80" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-red-100 rounded-full">
-              <AlertTriangle className="h-12 w-12 text-red-600" />
+        <div className="text-center mb-12 animate-fade-in-up">
+          <div className="flex justify-center mb-8">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-red-500 rounded-full blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300 animate-pulse"></div>
+              <div className="relative p-6 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-xl">
+                <AlertTriangle className="h-12 w-12 text-white" />
+              </div>
             </div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Defaulter Directory
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Defaulter 
+            <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> Directory</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Public registry of individuals with multiple corruption reports. 
             Help your community stay informed and vigilant.
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input
-                  placeholder="Search by name, designation, or location..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <FloatingCard className="p-8 mb-8 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="md:col-span-3">
+              <ModernInput
+                placeholder="Search by name, designation, or location..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                icon={<Search className="h-5 w-5" />}
+              />
             </div>
-            <div>
+            <div className="relative">
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 appearance-none"
               >
                 <option value="">All Categories</option>
                 {Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
               </select>
+              <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
             </div>
           </div>
-        </div>
+        </FloatingCard>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            Showing {filteredDefaulters.length} defaulter{filteredDefaulters.length !== 1 ? 's' : ''}
+        <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          <p className="text-gray-600 text-lg">
+            Showing <span className="font-semibold text-red-600">{filteredDefaulters.length}</span> defaulter{filteredDefaulters.length !== 1 ? 's' : ''}
             {searchTerm && ` matching "${searchTerm}"`}
           </p>
         </div>
 
         {/* Defaulters Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDefaulters.map((defaulter) => (
-            <div key={defaulter.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredDefaulters.map((defaulter, index) => (
+            <FloatingCard 
+              key={defaulter.id} 
+              delay={index * 100}
+              className="overflow-hidden group"
+            >
               {/* Header with Badge */}
-              <div className="relative p-6 pb-4">
+              <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
                 <div className="absolute top-4 right-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${getBadgeColor(defaulter.reportCount)}`}>
+                  <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.reportCount)}`}>
                     {defaulter.reportCount} Reports
                   </span>
                 </div>
                 
-                <h3 className="text-xl font-bold text-gray-900 mb-2 pr-20">
-                  {defaulter.name}
-                </h3>
-                <p className="text-gray-600 font-medium mb-1">
-                  {defaulter.designation}
-                </p>
-                <div className="flex items-center text-gray-500 text-sm mb-4">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {defaulter.location}
-                </div>
+                <div className="pr-24">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors duration-300">
+                    {defaulter.name}
+                  </h3>
+                  <p className="text-gray-600 font-medium mb-2">
+                    {defaulter.designation}
+                  </p>
+                  <div className="flex items-center text-gray-500 text-sm mb-4">
+                    <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                    {defaulter.location}
+                  </div>
 
-                {/* Status Badge */}
-                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(defaulter.status)}`}>
-                  {defaulter.status.charAt(0).toUpperCase() + defaulter.status.slice(1)}
-                </span>
+                  {/* Status Badge */}
+                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(defaulter.status)}`}>
+                    {defaulter.status.charAt(0).toUpperCase() + defaulter.status.slice(1)}
+                  </span>
+                </div>
               </div>
 
               {/* Categories */}
               <div className="px-6 pb-4">
                 <div className="flex flex-wrap gap-2">
                   {defaulter.categories.map((category) => (
-                    <span key={category} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                    <span key={category} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg border hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200">
                       {CORRUPTION_CATEGORIES[category as keyof typeof CORRUPTION_CATEGORIES]}
                     </span>
                   ))}
@@ -175,58 +248,67 @@ export default function Directory() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+              <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
+                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                   <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 mr-2 text-red-500" />
                     Last reported: {new Date(defaulter.lastReported).toLocaleDateString()}
                   </div>
                 </div>
                 
-                <div className="flex space-x-2">
-                  <Button size="sm" className="flex-1 text-xs">
-                    <Flag className="h-3 w-3 mr-1" />
+                <div className="flex space-x-3">
+                  <GradientButton size="sm" className="flex-1 text-xs">
+                    <Flag className="h-3 w-3 mr-2" />
                     View Reports
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1 text-xs">
-                    <ExternalLink className="h-3 w-3 mr-1" />
+                  </GradientButton>
+                  <GradientButton variant="secondary" size="sm" className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
+                    <ExternalLink className="h-3 w-3 mr-2" />
                     Report to Police
-                  </Button>
+                  </GradientButton>
                 </div>
               </div>
-            </div>
+            </FloatingCard>
           ))}
         </div>
 
         {/* No Results */}
         {filteredDefaulters.length === 0 && (
-          <div className="text-center py-12">
-            <div className="flex justify-center mb-4">
-              <Search className="h-12 w-12 text-gray-400" />
+          <FloatingCard className="text-center py-16">
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-gray-100 rounded-full">
+                <Search className="h-12 w-12 text-gray-400" />
+              </div>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No defaulters found</h3>
-            <p className="text-gray-500">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No defaulters found</h3>
+            <p className="text-gray-500 mb-6">
               Try adjusting your search criteria or browse all categories.
             </p>
-          </div>
+            <GradientButton onClick={() => { setSearchTerm(''); setSelectedCategory(''); }}>
+              Clear Filters
+            </GradientButton>
+          </FloatingCard>
         )}
 
         {/* Warning Notice */}
-        <div className="mt-12 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="h-6 w-6 text-yellow-600 mt-0.5" />
-            <div>
-              <h3 className="text-lg font-semibold text-yellow-800 mb-2">
-                Important Notice
-              </h3>
-              <p className="text-yellow-700 leading-relaxed">
-                This directory contains individuals with multiple corruption reports. 
-                All information is based on user submissions and should be verified independently. 
-                If you believe any information is incorrect, you can file a dispute through our claim system.
-              </p>
+        <FloatingCard className="mt-12 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200" delay={600}>
+          <div className="p-8">
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-yellow-800 mb-3">
+                  Important Notice
+                </h3>
+                <p className="text-yellow-700 leading-relaxed">
+                  This directory contains individuals with multiple corruption reports. 
+                  All information is based on user submissions and should be verified independently. 
+                  If you believe any information is incorrect, you can file a dispute through our claim system.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </FloatingCard>
       </div>
     </div>
   );

@@ -21,17 +21,20 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="bg-white shadow-lg border-b border-gray-200">
+    <header className="bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
             <div className="relative">
-              <Shield className="h-8 w-8 text-red-600 group-hover:text-red-700 transition-colors" />
-              <AlertTriangle className="h-4 w-4 text-yellow-500 absolute -top-1 -right-1" />
+              <div className="absolute inset-0 bg-red-500 rounded-lg blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+              <div className="relative p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                <Shield className="h-6 w-6 text-white" />
+                <AlertTriangle className="h-3 w-3 text-yellow-400 absolute -top-1 -right-1 animate-pulse" />
+              </div>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 group-hover:text-red-600 transition-colors">
+              <h1 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-red-600 bg-clip-text text-transparent group-hover:from-red-600 group-hover:to-red-800 transition-all duration-300">
                 Corruption Watchdog
               </h1>
               <p className="text-xs text-gray-500 -mt-1">Fighting Corruption Together</p>
@@ -39,15 +42,15 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex space-x-1">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 ${
                   isActive(item.href)
-                    ? 'bg-red-50 text-red-700 border-b-2 border-red-600'
-                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25'
+                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm'
                 }`}
               >
                 {item.name}
@@ -58,7 +61,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-md text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="md:hidden p-2 rounded-xl text-gray-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm transition-all duration-300 transform hover:scale-105"
           >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -66,17 +69,17 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-4">
+          <div className="md:hidden border-t border-gray-200/50 py-4 animate-fade-in">
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
                     isActive(item.href)
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
+                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                      : 'text-gray-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm'
                   }`}
                 >
                   {item.name}

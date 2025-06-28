@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Shield, Upload, MapPin, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Upload, MapPin, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import Button from '../components/UI/Button';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
+import { DatabaseService } from '../lib/database';
 
 interface ReportFormData {
   corrupt_person_name: string;
@@ -21,13 +22,14 @@ interface ReportFormData {
 export default function ReportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   
   const { 
     register, 
     handleSubmit, 
     watch, 
-    formState: { errors, isValid }, 
+    formState: { errors }, 
     reset
   } = useForm<ReportFormData>({
     mode: 'onChange',
@@ -55,19 +57,40 @@ export default function ReportForm() {
 
   const onSubmit = async (data: ReportFormData) => {
     setIsSubmitting(true);
+    setSubmitError(null);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare data for database
+      const reportData = {
+        corrupt_person_name: data.corrupt_person_name.trim(),
+        designation: data.designation.trim(),
+        address: data.address?.trim() || undefined,
+        area_region: data.area_region.trim(),
+        description: data.description.trim(),
+        category: data.category,
+        approached_police: data.approached_police === 'yes',
+        was_resolved: data.was_resolved === 'yes',
+        is_anonymous: data.is_anonymous,
+        reporter_name: data.is_anonymous ? undefined : data.reporter_name?.trim(),
+        reporter_email: data.is_anonymous ? undefined : data.reporter_email?.trim(),
+        evidence_files: files.map(file => file.name) // In production, upload files first
+      };
+
+      // Save to database
+      const { data: savedReport, error } = await DatabaseService.createReport(reportData);
       
-      console.log('Report submitted successfully:', data);
-      console.log('Files:', files);
+      if (error) {
+        throw new Error(error.message || 'Failed to submit report');
+      }
+
+      console.log('Report saved successfully:', savedReport);
       
       setIsSubmitted(true);
       reset();
       setFiles([]);
     } catch (error) {
       console.error('Error submitting report:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,7 +116,7 @@ export default function ReportForm() {
               Report Submitted Successfully
             </h2>
             <p className="text-gray-600 mb-6">
-              Thank you for your courage in reporting corruption. Your report has been recorded 
+              Thank you for your courage in reporting corruption. Your report has been saved to our database 
               and will be reviewed by our team. Together, we can build a more transparent society.
             </p>
             <div className="space-y-4">
@@ -127,6 +150,16 @@ export default function ReportForm() {
             Your voice matters. Help us fight corruption by reporting incidents safely and securely.
           </p>
         </div>
+
+        {/* Error Alert */}
+        {submitError && (
+          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+              <p className="text-red-800">{submitError}</p>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
@@ -495,12 +528,20 @@ export default function ReportForm() {
                 isLoading={isSubmitting}
                 className="w-full py-4 text-lg font-semibold"
                 size="lg"
+                disabled={isSubmitting}
               >
-                {isSubmitting ? 'Submitting Report...' : 'Submit Corruption Report'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Saving Report to Database...
+                  </>
+                ) : (
+                  'Submit Corruption Report'
+                )}
               </Button>
               <p className="text-sm text-gray-500 text-center mt-4">
                 By submitting this report, you agree to our terms of service and privacy policy.
-                All reports are treated with strict confidentiality.
+                All reports are treated with strict confidentiality and saved securely.
               </p>
               
               {/* Show validation errors summary */}

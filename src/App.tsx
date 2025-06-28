@@ -8,6 +8,7 @@ import ReportForm from './pages/ReportForm';
 import Directory from './pages/Directory';
 import HeatMap from './pages/HeatMap';
 import About from './pages/About';
+import Profile from './pages/Profile';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -24,6 +25,7 @@ function App() {
             <Route path="/directory" element={<Directory />} />
             <Route path="/heatmap" element={<HeatMap />} />
             <Route path="/about" element={<About />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
         <Footer />

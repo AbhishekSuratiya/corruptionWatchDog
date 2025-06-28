@@ -30,11 +30,12 @@ export default function ReportForm() {
     register, 
     handleSubmit, 
     watch, 
-    formState: { errors, isValid }, 
+    formState: { errors, isValid, touchedFields }, 
     reset,
-    trigger
+    getValues,
+    setValue
   } = useForm<ReportFormData>({
-    mode: 'onChange', // This enables real-time validation
+    mode: 'onBlur',
     defaultValues: {
       is_anonymous: true,
       approached_police: '',
@@ -58,8 +59,16 @@ export default function ReportForm() {
   }));
 
   const onSubmit = async (data: ReportFormData) => {
-    console.log('Form data being submitted:', data);
+    console.log('=== FORM SUBMISSION ===');
+    console.log('Form data:', data);
     console.log('Form errors:', errors);
+    console.log('Form is valid:', isValid);
+    
+    // Check if there are any errors
+    if (Object.keys(errors).length > 0) {
+      console.log('Form has errors, cannot submit');
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -80,17 +89,28 @@ export default function ReportForm() {
     }
   };
 
+  // Debug function to check form state
+  const debugForm = () => {
+    const values = getValues();
+    console.log('=== FORM DEBUG ===');
+    console.log('Current form values:', values);
+    console.log('Form errors:', errors);
+    console.log('Touched fields:', touchedFields);
+    console.log('Is form valid:', isValid);
+    console.log('Individual field values:');
+    console.log('- corrupt_person_name:', values.corrupt_person_name, '(length:', values.corrupt_person_name?.length, ')');
+    console.log('- designation:', values.designation, '(length:', values.designation?.length, ')');
+    console.log('- area_region:', values.area_region, '(length:', values.area_region?.length, ')');
+    console.log('- category:', values.category);
+    console.log('- description:', values.description, '(length:', values.description?.length, ')');
+    console.log('- approached_police:', values.approached_police);
+    console.log('- was_resolved:', values.was_resolved);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setFiles(Array.from(e.target.files));
     }
-  };
-
-  // Debug function to check form state
-  const debugForm = () => {
-    console.log('Current form values:', watch());
-    console.log('Form errors:', errors);
-    console.log('Is form valid:', isValid);
   };
 
   if (isSubmitted) {
@@ -147,10 +167,14 @@ export default function ReportForm() {
           <button 
             type="button" 
             onClick={debugForm}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm mr-4"
           >
             Debug Form (Check Console)
           </button>
+          <span className="text-sm text-gray-600">
+            Form Valid: {isValid ? '✅' : '❌'} | 
+            Errors: {Object.keys(errors).length}
+          </span>
         </div>
 
         {/* Form */}
@@ -189,31 +213,55 @@ export default function ReportForm() {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Full Name *"
-                  {...register('corrupt_person_name', { 
-                    required: 'Full name is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Name must be at least 2 characters'
-                    }
-                  })}
-                  error={errors.corrupt_person_name?.message}
-                  placeholder="Enter the corrupt person's full name"
-                />
+                <div>
+                  <Input
+                    label="Full Name *"
+                    {...register('corrupt_person_name', { 
+                      required: 'Full name is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Name must be at least 2 characters'
+                      },
+                      validate: value => {
+                        if (!value || value.trim().length === 0) {
+                          return 'Full name is required';
+                        }
+                        return true;
+                      }
+                    })}
+                    error={errors.corrupt_person_name?.message}
+                    placeholder="Enter the corrupt person's full name"
+                  />
+                  {/* Debug info for this field */}
+                  <div className="text-xs text-gray-500 mt-1">
+                    Value: "{watch('corrupt_person_name')}" | Length: {watch('corrupt_person_name')?.length || 0}
+                  </div>
+                </div>
                 
-                <Input
-                  label="Designation/Job Title *"
-                  {...register('designation', { 
-                    required: 'Designation is required',
-                    minLength: {
-                      value: 2,
-                      message: 'Designation must be at least 2 characters'
-                    }
-                  })}
-                  error={errors.designation?.message}
-                  placeholder="e.g., Police Officer, Government Official"
-                />
+                <div>
+                  <Input
+                    label="Designation/Job Title *"
+                    {...register('designation', { 
+                      required: 'Designation is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Designation must be at least 2 characters'
+                      },
+                      validate: value => {
+                        if (!value || value.trim().length === 0) {
+                          return 'Designation is required';
+                        }
+                        return true;
+                      }
+                    })}
+                    error={errors.designation?.message}
+                    placeholder="e.g., Police Officer, Government Official"
+                  />
+                  {/* Debug info for this field */}
+                  <div className="text-xs text-gray-500 mt-1">
+                    Value: "{watch('designation')}" | Length: {watch('designation')?.length || 0}
+                  </div>
+                </div>
               </div>
 
               <Input
@@ -239,12 +287,22 @@ export default function ReportForm() {
                       minLength: {
                         value: 2,
                         message: 'Area must be at least 2 characters'
+                      },
+                      validate: value => {
+                        if (!value || value.trim().length === 0) {
+                          return 'Area/Region is required';
+                        }
+                        return true;
                       }
                     })}
                     error={errors.area_region?.message}
                     placeholder="Enter location where corruption occurred"
                   />
                   <MapPin className="absolute right-3 top-8 h-5 w-5 text-gray-400" />
+                  {/* Debug info for this field */}
+                  <div className="text-xs text-gray-500 mt-1">
+                    Value: "{watch('area_region')}" | Length: {watch('area_region')?.length || 0}
+                  </div>
                 </div>
                 
                 <Select
@@ -262,6 +320,15 @@ export default function ReportForm() {
                   minLength: {
                     value: 10,
                     message: 'Description must be at least 10 characters'
+                  },
+                  validate: value => {
+                    if (!value || value.trim().length === 0) {
+                      return 'Description is required';
+                    }
+                    if (value.trim().length < 10) {
+                      return 'Description must be at least 10 characters';
+                    }
+                    return true;
                   }
                 })}
                 error={errors.description?.message}
@@ -422,6 +489,7 @@ export default function ReportForm() {
                 isLoading={isSubmitting}
                 className="w-full py-4 text-lg font-semibold"
                 size="lg"
+                disabled={!isValid && Object.keys(errors).length > 0}
               >
                 {isSubmitting ? 'Submitting Report...' : 'Submit Corruption Report'}
               </Button>
@@ -429,6 +497,18 @@ export default function ReportForm() {
                 By submitting this report, you agree to our terms of service and privacy policy.
                 All reports are treated with strict confidentiality.
               </p>
+              
+              {/* Show validation errors summary */}
+              {Object.keys(errors).length > 0 && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h4>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {Object.entries(errors).map(([field, error]) => (
+                      <li key={field}>• {error?.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </form>
         </div>

@@ -6,7 +6,6 @@ import Input from '../components/UI/Input';
 import Select from '../components/UI/Select';
 import Textarea from '../components/UI/Textarea';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
-import { CorruptionReport } from '../types';
 
 interface ReportFormData {
   corrupt_person_name: string;
@@ -31,7 +30,15 @@ export default function ReportForm() {
     defaultValues: {
       is_anonymous: true,
       approached_police: '',
-      was_resolved: ''
+      was_resolved: '',
+      corrupt_person_name: '',
+      designation: '',
+      address: '',
+      area_region: '',
+      description: '',
+      category: '',
+      reporter_name: '',
+      reporter_email: ''
     }
   });
   
@@ -226,7 +233,7 @@ export default function ReportForm() {
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        value="true"
+                        value="yes"
                         {...register('approached_police', { required: 'Please select an option' })}
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
                       />
@@ -235,7 +242,7 @@ export default function ReportForm() {
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        value="false"
+                        value="no"
                         {...register('approached_police', { required: 'Please select an option' })}
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
                       />
@@ -255,7 +262,7 @@ export default function ReportForm() {
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        value="true"
+                        value="yes"
                         {...register('was_resolved', { required: 'Please select an option' })}
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
                       />
@@ -264,7 +271,7 @@ export default function ReportForm() {
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        value="false"
+                        value="no"
                         {...register('was_resolved', { required: 'Please select an option' })}
                         className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
                       />

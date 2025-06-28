@@ -55,7 +55,12 @@ export default function Home() {
       <section className="relative overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.05%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-repeat" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              animation: 'pulse 4s ease-in-out infinite'
+            }}></div>
+          </div>
           <div className="absolute top-0 left-0 w-full h-full">
             <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/20 rounded-full blur-3xl animate-float"></div>
             <div className="absolute bottom-20 right-20 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float-delayed"></div>
@@ -74,7 +79,7 @@ export default function Home() {
               </div>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight animate-fade-in-up text-white">
+            <h1 className="text-5xl md:text-7xl font-bold mb-12 leading-tight animate-fade-in-up text-white">
               Fight Corruption
               <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent animate-gradient-x">
                 Together
@@ -187,16 +192,22 @@ export default function Home() {
       {/* CTA Section - Static Content */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.03%22%3E%3Cpath d=%22M20 20c0-11.046-8.954-20-20-20v20h20z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-repeat" style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M20 20c0-11.046-8.954-20-20-20v20h20z'/%3E%3C/g%3E%3C/svg%3E")`
+            }}></div>
+          </div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float"></div>
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-yellow-500/20 rounded-full blur-3xl animate-float-delayed"></div>
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="animate-fade-in-up">
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 text-white">
+            <h2 className="text-4xl md:text-5xl font-bold mb-12 text-white leading-tight">
               Ready to Make a 
-              <span className="bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent"> Difference</span>?
+              <span className="block bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent">
+                Difference
+              </span>?
             </h2>
             <p className="text-xl mb-12 max-w-3xl mx-auto text-white/90 leading-relaxed">
               Join thousands of citizens who are actively fighting corruption in their communities. 

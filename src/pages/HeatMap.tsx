@@ -17,11 +17,28 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Modern color palette for corruption types
+const MODERN_COLORS = [
+  '#FF6B6B', // Coral Red
+  '#4ECDC4', // Turquoise
+  '#45B7D1', // Sky Blue
+  '#96CEB4', // Mint Green
+  '#FFEAA7', // Warm Yellow
+  '#DDA0DD', // Plum
+  '#98D8C8', // Seafoam
+  '#F7DC6F', // Golden Yellow
+  '#BB8FCE', // Lavender
+  '#85C1E9', // Light Blue
+  '#F8C471', // Peach
+  '#82E0AA'  // Light Green
+];
+
 export default function HeatMap() {
   const [regionData, setRegionData] = useState<RegionStats[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   useEffect(() => {
     // Simulate API calls for map and chart data
@@ -37,10 +54,11 @@ export default function HeatMap() {
         { region: 'Ahmedabad', count: 15, latitude: 23.0225, longitude: 72.5714, severity: 'low' }
       ];
 
-      const mockCategoryData = Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => ({
+      const mockCategoryData = Object.entries(CORRUPTION_CATEGORIES).map(([key, label], index) => ({
         name: label,
         value: Math.floor(Math.random() * 50) + 10,
-        color: `hsl(${Math.random() * 360}, 70%, 50%)`
+        color: MODERN_COLORS[index % MODERN_COLORS.length],
+        key: key
       }));
 
       setRegionData(mockRegionData);
@@ -60,6 +78,54 @@ export default function HeatMap() {
 
   const getMarkerColor = (severity: string) => {
     return SEVERITY_COLORS[severity as keyof typeof SEVERITY_COLORS];
+  };
+
+  const onPieEnter = (_: any, index: number) => {
+    setActiveIndex(index);
+  };
+
+  const onPieLeave = () => {
+    setActiveIndex(null);
+  };
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-4 shadow-xl">
+          <p className="font-semibold text-gray-900">{data.name}</p>
+          <p className="text-sm text-gray-600">
+            Reports: <span className="font-medium text-red-600">{data.value}</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            Percentage: <span className="font-medium text-blue-600">{((data.value / categoryData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(1)}%</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    if (percent < 0.05) return null; // Don't show labels for slices smaller than 5%
+    
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        className="text-xs font-semibold drop-shadow-lg"
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
   };
 
   return (
@@ -229,35 +295,77 @@ export default function HeatMap() {
               )}
             </FloatingCard>
 
-            {/* Category Pie Chart */}
+            {/* Modern Animated Category Pie Chart */}
             <FloatingCard className="p-6" delay={600}>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-                Corruption Types
+                Corruption Types Distribution
               </h3>
               {isLoading ? (
                 <div className="h-64 flex items-center justify-center">
                   <SkeletonLoader variant="circular" className="w-32 h-32 mx-auto" />
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={categoryData.slice(0, 6)}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData.slice(0, 8)}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={CustomLabel}
+                        outerRadius={100}
+                        innerRadius={30}
+                        fill="#8884d8"
+                        dataKey="value"
+                        onMouseEnter={onPieEnter}
+                        onMouseLeave={onPieLeave}
+                        animationBegin={0}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
+                      >
+                        {categoryData.slice(0, 8).map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color}
+                            stroke={activeIndex === index ? '#ffffff' : 'none'}
+                            strokeWidth={activeIndex === index ? 3 : 0}
+                            style={{
+                              filter: activeIndex === index ? 'brightness(1.1) drop-shadow(0 0 10px rgba(0,0,0,0.3))' : 'none',
+                              transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
+                              transformOrigin: 'center',
+                              transition: 'all 0.3s ease'
+                            }}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  
+                  {/* Legend */}
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    {categoryData.slice(0, 8).map((entry, index) => (
+                      <div 
+                        key={entry.key} 
+                        className={`flex items-center space-x-2 p-2 rounded-lg transition-all duration-300 cursor-pointer ${
+                          activeIndex === index ? 'bg-gray-100 shadow-md' : 'hover:bg-gray-50'
+                        }`}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onMouseLeave={() => setActiveIndex(null)}
+                      >
+                        <div 
+                          className="w-3 h-3 rounded-full shadow-sm"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="text-gray-700 font-medium truncate">
+                          {entry.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </FloatingCard>
           </div>

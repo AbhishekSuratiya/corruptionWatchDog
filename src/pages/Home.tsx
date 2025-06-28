@@ -79,9 +79,9 @@ export default function Home() {
               </div>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-12 leading-tight animate-fade-in-up text-white">
+            <h1 className="text-5xl md:text-7xl font-bold mb-16 animate-fade-in-up text-white" style={{ lineHeight: '1.1' }}>
               Fight Corruption
-              <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent animate-gradient-x">
+              <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent animate-gradient-x mt-4" style={{ paddingBottom: '0.2em' }}>
                 Together
               </span>
             </h1>
@@ -203,9 +203,9 @@ export default function Home() {
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="animate-fade-in-up">
-            <h2 className="text-4xl md:text-5xl font-bold mb-12 text-white leading-tight">
+            <h2 className="text-4xl md:text-5xl font-bold mb-16 text-white" style={{ lineHeight: '1.1' }}>
               Ready to Make a 
-              <span className="block bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent mt-4" style={{ paddingBottom: '0.2em' }}>
                 Difference
               </span>?
             </h2>

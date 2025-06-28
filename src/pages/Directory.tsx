@@ -5,97 +5,71 @@ import ModernInput from '../components/UI/ModernInput';
 import FloatingCard from '../components/UI/FloatingCard';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
+import { DatabaseService } from '../lib/database';
 
 interface DefaulterProfile {
-  id: string;
-  name: string;
+  corrupt_person_name: string;
   designation: string;
-  location: string;
-  reportCount: number;
-  lastReported: string;
+  area_region: string;
+  report_count: number;
+  latest_report_date: string;
   categories: string[];
-  status: 'active' | 'resolved' | 'disputed';
+  status: string;
 }
 
 export default function Directory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [defaulters, setDefaulters] = useState<DefaulterProfile[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call for defaulters data
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
+    fetchDefaulters();
   }, []);
 
-  // Mock data - replace with actual API call
-  const defaulters: DefaulterProfile[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      designation: 'Traffic Police Officer',
-      location: 'Mumbai, Maharashtra',
-      reportCount: 15,
-      lastReported: '2024-01-15',
-      categories: ['bribery', 'extortion'],
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      designation: 'Municipal Corporation Officer',
-      location: 'Delhi, NCR',
-      reportCount: 8,
-      lastReported: '2024-01-10',
-      categories: ['nepotism', 'abuse_of_power'],
-      status: 'disputed'
-    },
-    {
-      id: '3',
-      name: 'Robert Johnson',
-      designation: 'Government Clerk',
-      location: 'Bangalore, Karnataka',
-      reportCount: 23,
-      lastReported: '2024-01-20',
-      categories: ['bribery', 'misuse_of_funds'],
-      status: 'active'
-    },
-    {
-      id: '4',
-      name: 'Priya Sharma',
-      designation: 'Tax Inspector',
-      location: 'Chennai, Tamil Nadu',
-      reportCount: 12,
-      lastReported: '2024-01-18',
-      categories: ['extortion', 'fraud'],
-      status: 'active'
-    },
-    {
-      id: '5',
-      name: 'Michael Brown',
-      designation: 'Building Inspector',
-      location: 'Pune, Maharashtra',
-      reportCount: 6,
-      lastReported: '2024-01-12',
-      categories: ['bribery'],
-      status: 'resolved'
-    },
-    {
-      id: '6',
-      name: 'Anjali Patel',
-      designation: 'License Officer',
-      location: 'Ahmedabad, Gujarat',
-      reportCount: 19,
-      lastReported: '2024-01-22',
-      categories: ['nepotism', 'abuse_of_power', 'bribery'],
-      status: 'active'
+  const fetchDefaulters = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const { data, error } = await DatabaseService.getDefaulters(2); // Minimum 2 reports to be considered a defaulter
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch defaulters');
+      }
+
+      if (data) {
+        // Transform the data to match our interface
+        const transformedData: DefaulterProfile[] = data.map(item => ({
+          corrupt_person_name: item.corrupt_person_name,
+          designation: item.designation,
+          area_region: item.area_region,
+          report_count: Number(item.report_count),
+          latest_report_date: item.latest_report_date,
+          categories: item.categories || [],
+          status: item.status === 'critical' ? 'active' : 
+                  item.status === 'high' ? 'active' : 
+                  item.status === 'medium' ? 'disputed' : 'resolved'
+        }));
+        
+        setDefaulters(transformedData);
+      } else {
+        setDefaulters([]);
+      }
+    } catch (err) {
+      console.error('Error fetching defaulters:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load defaulters');
+      setDefaulters([]);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const filteredDefaulters = defaulters.filter(defaulter => {
-    const matchesSearch = defaulter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = defaulter.corrupt_person_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          defaulter.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         defaulter.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         defaulter.area_region.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = !selectedCategory || defaulter.categories.includes(selectedCategory);
     
@@ -165,14 +139,52 @@ export default function Directory() {
               <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
             </div>
           </div>
+          
+          {/* Refresh Button */}
+          <div className="mt-4 flex justify-end">
+            <GradientButton 
+              onClick={fetchDefaulters} 
+              size="sm"
+              disabled={isLoading}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+            >
+              {isLoading ? 'Refreshing...' : 'Refresh Data'}
+            </GradientButton>
+          </div>
         </FloatingCard>
 
+        {/* Error Message */}
+        {error && (
+          <FloatingCard className="mb-8 bg-red-50 border-2 border-red-200">
+            <div className="p-6">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div>
+                  <h3 className="text-lg font-semibold text-red-800">Error Loading Data</h3>
+                  <p className="text-red-700">{error}</p>
+                  <button 
+                    onClick={fetchDefaulters}
+                    className="mt-2 text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          </FloatingCard>
+        )}
+
         {/* Results Count - Show only when not loading */}
-        {!isLoading && (
+        {!isLoading && !error && (
           <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
             <p className="text-gray-600 text-lg">
               Showing <span className="font-semibold text-red-600">{filteredDefaulters.length}</span> defaulter{filteredDefaulters.length !== 1 ? 's' : ''}
               {searchTerm && ` matching "${searchTerm}"`}
+              {defaulters.length > 0 && (
+                <span className="text-sm text-gray-500 ml-2">
+                  (Total: {defaulters.length} in database)
+                </span>
+              )}
             </p>
           </div>
         )}
@@ -184,31 +196,31 @@ export default function Directory() {
             Array.from({ length: 6 }).map((_, index) => (
               <SkeletonLoader key={index} variant="card" className="h-80" />
             ))
-          ) : (
+          ) : filteredDefaulters.length > 0 ? (
             filteredDefaulters.map((defaulter, index) => (
               <FloatingCard 
-                key={defaulter.id} 
+                key={`${defaulter.corrupt_person_name}-${defaulter.designation}-${index}`}
                 delay={index * 100}
                 className="overflow-hidden group"
               >
                 {/* Header with Badge */}
                 <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
                   <div className="absolute top-4 right-4">
-                    <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.reportCount)}`}>
-                      {defaulter.reportCount} Reports
+                    <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.report_count)}`}>
+                      {defaulter.report_count} Reports
                     </span>
                   </div>
                   
                   <div className="pr-24">
                     <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors duration-300">
-                      {defaulter.name}
+                      {defaulter.corrupt_person_name}
                     </h3>
                     <p className="text-gray-600 font-medium mb-2">
                       {defaulter.designation}
                     </p>
                     <div className="flex items-center text-gray-500 text-sm mb-4">
                       <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                      {defaulter.location}
+                      {defaulter.area_region}
                     </div>
 
                     {/* Status Badge */}
@@ -223,7 +235,7 @@ export default function Directory() {
                   <div className="flex flex-wrap gap-2">
                     {defaulter.categories.map((category) => (
                       <span key={category} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg border hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200">
-                        {CORRUPTION_CATEGORIES[category as keyof typeof CORRUPTION_CATEGORIES]}
+                        {CORRUPTION_CATEGORIES[category as keyof typeof CORRUPTION_CATEGORIES] || category}
                       </span>
                     ))}
                   </div>
@@ -234,7 +246,7 @@ export default function Directory() {
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-2 text-red-500" />
-                      Last reported: {new Date(defaulter.lastReported).toLocaleDateString()}
+                      Last reported: {new Date(defaulter.latest_report_date).toLocaleDateString()}
                     </div>
                   </div>
                   
@@ -251,26 +263,33 @@ export default function Directory() {
                 </div>
               </FloatingCard>
             ))
-          )}
-        </div>
-
-        {/* No Results - Show only when not loading and no results */}
-        {!isLoading && filteredDefaulters.length === 0 && (
-          <FloatingCard className="text-center py-16">
-            <div className="flex justify-center mb-6">
-              <div className="p-4 bg-gray-100 rounded-full">
-                <Search className="h-12 w-12 text-gray-400" />
-              </div>
+          ) : !error ? (
+            // No Results - Show only when not loading and no results
+            <div className="col-span-full">
+              <FloatingCard className="text-center py-16">
+                <div className="flex justify-center mb-6">
+                  <div className="p-4 bg-gray-100 rounded-full">
+                    <Search className="h-12 w-12 text-gray-400" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {defaulters.length === 0 ? 'No defaulters found' : 'No matching defaulters'}
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  {defaulters.length === 0 
+                    ? 'No individuals with multiple corruption reports have been found in the database yet.'
+                    : 'Try adjusting your search criteria or browse all categories.'
+                  }
+                </p>
+                {filteredDefaulters.length === 0 && defaulters.length > 0 && (
+                  <GradientButton onClick={() => { setSearchTerm(''); setSelectedCategory(''); }}>
+                    Clear Filters
+                  </GradientButton>
+                )}
+              </FloatingCard>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No defaulters found</h3>
-            <p className="text-gray-500 mb-6">
-              Try adjusting your search criteria or browse all categories.
-            </p>
-            <GradientButton onClick={() => { setSearchTerm(''); setSelectedCategory(''); }}>
-              Clear Filters
-            </GradientButton>
-          </FloatingCard>
-        )}
+          ) : null}
+        </div>
 
         {/* Warning Notice - Static Content */}
         <FloatingCard className="mt-12 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200" delay={600}>
@@ -284,9 +303,12 @@ export default function Directory() {
                   Important Notice
                 </h3>
                 <p className="text-yellow-700 leading-relaxed">
-                  This directory contains individuals with multiple corruption reports. 
+                  This directory contains individuals with multiple corruption reports from our database. 
                   All information is based on user submissions and should be verified independently. 
                   If you believe any information is incorrect, you can file a dispute through our claim system.
+                </p>
+                <p className="text-yellow-700 leading-relaxed mt-2">
+                  <strong>Data Source:</strong> Real-time data from Supabase database. Last updated: {new Date().toLocaleString()}
                 </p>
               </div>
             </div>

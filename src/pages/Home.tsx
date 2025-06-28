@@ -7,11 +7,11 @@ import AnimatedCounter from '../components/UI/AnimatedCounter';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 
 export default function Home() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 1500);
+    // Simulate API call for stats data
+    const timer = setTimeout(() => setStatsLoading(false), 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -49,60 +49,9 @@ export default function Home() {
     }
   ];
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-        {/* Hero Skeleton */}
-        <section className="relative py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center space-y-8">
-              <SkeletonLoader variant="circular" className="w-20 h-20 mx-auto" />
-              <SkeletonLoader variant="text" lines={2} className="max-w-2xl mx-auto" height="h-8" />
-              <SkeletonLoader variant="text" lines={3} className="max-w-4xl mx-auto" height="h-6" />
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <SkeletonLoader className="w-48 h-14 mx-auto" />
-                <SkeletonLoader className="w-48 h-14 mx-auto" />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats Skeleton */}
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="text-center">
-                  <SkeletonLoader variant="circular" className="w-16 h-16 mx-auto mb-4" />
-                  <SkeletonLoader className="w-20 h-8 mx-auto mb-2" />
-                  <SkeletonLoader className="w-24 h-4 mx-auto" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Features Skeleton */}
-        <section className="py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <SkeletonLoader className="w-96 h-10 mx-auto mb-4" />
-              <SkeletonLoader variant="text" lines={2} className="max-w-3xl mx-auto" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <SkeletonLoader key={index} variant="card" />
-              ))}
-            </div>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Hero Section */}
+      {/* Hero Section - Static Content */}
       <section className="relative overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
@@ -163,28 +112,41 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section - Data Driven */}
       <section className="py-20 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <FloatingCard key={index} delay={index * 100} className="p-8 text-center group">
-                <div className="flex justify-center mb-6">
-                  <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
-                    <stat.icon className="h-8 w-8 text-white" />
+            {statsLoading ? (
+              // Show skeleton only for data-driven stats
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="text-center">
+                  <div className="flex justify-center mb-6">
+                    <SkeletonLoader variant="circular" className="w-16 h-16" />
                   </div>
+                  <SkeletonLoader className="w-20 h-8 mx-auto mb-2" />
+                  <SkeletonLoader className="w-24 h-4 mx-auto" />
                 </div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">
-                  <AnimatedCounter end={stat.value} />
-                </div>
-                <div className="text-gray-600 font-medium">{stat.label}</div>
-              </FloatingCard>
-            ))}
+              ))
+            ) : (
+              stats.map((stat, index) => (
+                <FloatingCard key={index} delay={index * 100} className="p-8 text-center group">
+                  <div className="flex justify-center mb-6">
+                    <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
+                      <stat.icon className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-4xl font-bold text-gray-900 mb-2">
+                    <AnimatedCounter end={stat.value} />
+                  </div>
+                  <div className="text-gray-600 font-medium">{stat.label}</div>
+                </FloatingCard>
+              ))
+            )}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section - Static Content */}
       <section className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-50/50 to-transparent"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -222,7 +184,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section - Static Content */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.03%22%3E%3Cpath d=%22M20 20c0-11.046-8.954-20-20-20v20h20z%22/%3E%3C/g%3E%3C/svg%3E')]"></div>

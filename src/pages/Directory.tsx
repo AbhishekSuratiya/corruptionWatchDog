@@ -23,6 +23,7 @@ export default function Directory() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Simulate API call for defaulters data
     const timer = setTimeout(() => setIsLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
@@ -116,37 +117,10 @@ export default function Directory() {
     return 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25';
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header Skeleton */}
-          <div className="text-center mb-12">
-            <SkeletonLoader variant="circular" className="w-16 h-16 mx-auto mb-6" />
-            <SkeletonLoader className="w-96 h-10 mx-auto mb-4" />
-            <SkeletonLoader variant="text" lines={2} className="max-w-3xl mx-auto" />
-          </div>
-
-          {/* Search Skeleton */}
-          <div className="mb-8">
-            <SkeletonLoader className="w-full h-20 rounded-2xl" />
-          </div>
-
-          {/* Grid Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <SkeletonLoader key={index} variant="card" className="h-80" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {/* Header - Static Content */}
         <div className="text-center mb-12 animate-fade-in-up">
           <div className="flex justify-center mb-8">
             <div className="relative group">
@@ -166,7 +140,7 @@ export default function Directory() {
           </p>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search and Filters - Static Content */}
         <FloatingCard className="p-8 mb-8 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="md:col-span-3">
@@ -193,86 +167,95 @@ export default function Directory() {
           </div>
         </FloatingCard>
 
-        {/* Results Count */}
-        <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-          <p className="text-gray-600 text-lg">
-            Showing <span className="font-semibold text-red-600">{filteredDefaulters.length}</span> defaulter{filteredDefaulters.length !== 1 ? 's' : ''}
-            {searchTerm && ` matching "${searchTerm}"`}
-          </p>
-        </div>
+        {/* Results Count - Show only when not loading */}
+        {!isLoading && (
+          <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+            <p className="text-gray-600 text-lg">
+              Showing <span className="font-semibold text-red-600">{filteredDefaulters.length}</span> defaulter{filteredDefaulters.length !== 1 ? 's' : ''}
+              {searchTerm && ` matching "${searchTerm}"`}
+            </p>
+          </div>
+        )}
 
-        {/* Defaulters Grid */}
+        {/* Defaulters Grid - Data Driven */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredDefaulters.map((defaulter, index) => (
-            <FloatingCard 
-              key={defaulter.id} 
-              delay={index * 100}
-              className="overflow-hidden group"
-            >
-              {/* Header with Badge */}
-              <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
-                <div className="absolute top-4 right-4">
-                  <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.reportCount)}`}>
-                    {defaulter.reportCount} Reports
-                  </span>
-                </div>
-                
-                <div className="pr-24">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors duration-300">
-                    {defaulter.name}
-                  </h3>
-                  <p className="text-gray-600 font-medium mb-2">
-                    {defaulter.designation}
-                  </p>
-                  <div className="flex items-center text-gray-500 text-sm mb-4">
-                    <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                    {defaulter.location}
-                  </div>
-
-                  {/* Status Badge */}
-                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(defaulter.status)}`}>
-                    {defaulter.status.charAt(0).toUpperCase() + defaulter.status.slice(1)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Categories */}
-              <div className="px-6 pb-4">
-                <div className="flex flex-wrap gap-2">
-                  {defaulter.categories.map((category) => (
-                    <span key={category} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg border hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200">
-                      {CORRUPTION_CATEGORIES[category as keyof typeof CORRUPTION_CATEGORIES]}
+          {isLoading ? (
+            // Show skeleton only for data-driven content
+            Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonLoader key={index} variant="card" className="h-80" />
+            ))
+          ) : (
+            filteredDefaulters.map((defaulter, index) => (
+              <FloatingCard 
+                key={defaulter.id} 
+                delay={index * 100}
+                className="overflow-hidden group"
+              >
+                {/* Header with Badge */}
+                <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
+                  <div className="absolute top-4 right-4">
+                    <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.reportCount)}`}>
+                      {defaulter.reportCount} Reports
                     </span>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                  
+                  <div className="pr-24">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors duration-300">
+                      {defaulter.name}
+                    </h3>
+                    <p className="text-gray-600 font-medium mb-2">
+                      {defaulter.designation}
+                    </p>
+                    <div className="flex items-center text-gray-500 text-sm mb-4">
+                      <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                      {defaulter.location}
+                    </div>
 
-              {/* Footer */}
-              <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-red-500" />
-                    Last reported: {new Date(defaulter.lastReported).toLocaleDateString()}
+                    {/* Status Badge */}
+                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(defaulter.status)}`}>
+                      {defaulter.status.charAt(0).toUpperCase() + defaulter.status.slice(1)}
+                    </span>
                   </div>
                 </div>
-                
-                <div className="flex space-x-3">
-                  <GradientButton size="sm" className="flex-1 text-xs">
-                    <Flag className="h-3 w-3 mr-2" />
-                    View Reports
-                  </GradientButton>
-                  <GradientButton variant="secondary" size="sm" className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
-                    <ExternalLink className="h-3 w-3 mr-2" />
-                    Report to Police
-                  </GradientButton>
+
+                {/* Categories */}
+                <div className="px-6 pb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {defaulter.categories.map((category) => (
+                      <span key={category} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg border hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200">
+                        {CORRUPTION_CATEGORIES[category as keyof typeof CORRUPTION_CATEGORIES]}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </FloatingCard>
-          ))}
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-2 text-red-500" />
+                      Last reported: {new Date(defaulter.lastReported).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    <GradientButton size="sm" className="flex-1 text-xs">
+                      <Flag className="h-3 w-3 mr-2" />
+                      View Reports
+                    </GradientButton>
+                    <GradientButton variant="secondary" size="sm" className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
+                      <ExternalLink className="h-3 w-3 mr-2" />
+                      Report to Police
+                    </GradientButton>
+                  </div>
+                </div>
+              </FloatingCard>
+            ))
+          )}
         </div>
 
-        {/* No Results */}
-        {filteredDefaulters.length === 0 && (
+        {/* No Results - Show only when not loading and no results */}
+        {!isLoading && filteredDefaulters.length === 0 && (
           <FloatingCard className="text-center py-16">
             <div className="flex justify-center mb-6">
               <div className="p-4 bg-gray-100 rounded-full">
@@ -289,7 +272,7 @@ export default function Directory() {
           </FloatingCard>
         )}
 
-        {/* Warning Notice */}
+        {/* Warning Notice - Static Content */}
         <FloatingCard className="mt-12 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200" delay={600}>
           <div className="p-8">
             <div className="flex items-start space-x-4">

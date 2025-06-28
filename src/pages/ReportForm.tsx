@@ -28,8 +28,7 @@ export default function ReportForm() {
     handleSubmit, 
     watch, 
     formState: { errors, isValid }, 
-    reset,
-    getValues
+    reset
   } = useForm<ReportFormData>({
     mode: 'onChange',
     defaultValues: {
@@ -48,7 +47,6 @@ export default function ReportForm() {
   });
   
   const isAnonymous = watch('is_anonymous');
-  const watchedValues = watch(); // Watch all values
 
   const categoryOptions = Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => ({
     value: key,
@@ -56,11 +54,6 @@ export default function ReportForm() {
   }));
 
   const onSubmit = async (data: ReportFormData) => {
-    console.log('=== FORM SUBMISSION ===');
-    console.log('Form data:', data);
-    console.log('Form errors:', errors);
-    console.log('Form is valid:', isValid);
-    
     setIsSubmitting(true);
     
     try {
@@ -78,20 +71,6 @@ export default function ReportForm() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Debug function to check form state
-  const debugForm = () => {
-    const values = getValues();
-    console.log('=== FORM DEBUG ===');
-    console.log('Current form values:', values);
-    console.log('Watched values:', watchedValues);
-    console.log('Form errors:', errors);
-    console.log('Is form valid:', isValid);
-    console.log('Individual field values:');
-    Object.entries(values).forEach(([key, value]) => {
-      console.log(`- ${key}:`, value, `(length: ${typeof value === 'string' ? value.length : 'N/A'})`);
-    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,21 +126,6 @@ export default function ReportForm() {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Your voice matters. Help us fight corruption by reporting incidents safely and securely.
           </p>
-        </div>
-
-        {/* Debug Button - Remove in production */}
-        <div className="mb-4 text-center">
-          <button 
-            type="button" 
-            onClick={debugForm}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm mr-4"
-          >
-            Debug Form (Check Console)
-          </button>
-          <span className="text-sm text-gray-600">
-            Form Valid: {isValid ? '✅' : '❌'} | 
-            Errors: {Object.keys(errors).length}
-          </span>
         </div>
 
         {/* Form */}
@@ -226,10 +190,6 @@ export default function ReportForm() {
                   {errors.corrupt_person_name && (
                     <p className="text-sm text-red-600 mt-1">{errors.corrupt_person_name.message}</p>
                   )}
-                  {/* Debug info for this field */}
-                  <div className="text-xs text-gray-500 mt-1">
-                    Value: "{watchedValues.corrupt_person_name || ''}" | Length: {(watchedValues.corrupt_person_name || '').length}
-                  </div>
                 </div>
                 
                 <div>
@@ -258,10 +218,6 @@ export default function ReportForm() {
                   {errors.designation && (
                     <p className="text-sm text-red-600 mt-1">{errors.designation.message}</p>
                   )}
-                  {/* Debug info for this field */}
-                  <div className="text-xs text-gray-500 mt-1">
-                    Value: "{watchedValues.designation || ''}" | Length: {(watchedValues.designation || '').length}
-                  </div>
                 </div>
               </div>
 
@@ -314,10 +270,6 @@ export default function ReportForm() {
                   {errors.area_region && (
                     <p className="text-sm text-red-600 mt-1">{errors.area_region.message}</p>
                   )}
-                  {/* Debug info for this field */}
-                  <div className="text-xs text-gray-500 mt-1">
-                    Value: "{watchedValues.area_region || ''}" | Length: {(watchedValues.area_region || '').length}
-                  </div>
                 </div>
                 
                 <div>

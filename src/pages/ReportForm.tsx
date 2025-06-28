@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Shield, Upload, MapPin, AlertCircle, CheckCircle } from 'lucide-react';
 import Button from '../components/UI/Button';
-import Input from '../components/UI/Input';
-import Select from '../components/UI/Select';
-import Textarea from '../components/UI/Textarea';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 
 interface ReportFormData {
@@ -30,12 +27,11 @@ export default function ReportForm() {
     register, 
     handleSubmit, 
     watch, 
-    formState: { errors, isValid, touchedFields }, 
+    formState: { errors, isValid }, 
     reset,
-    getValues,
-    setValue
+    getValues
   } = useForm<ReportFormData>({
-    mode: 'onBlur',
+    mode: 'onChange',
     defaultValues: {
       is_anonymous: true,
       approached_police: '',
@@ -52,6 +48,7 @@ export default function ReportForm() {
   });
   
   const isAnonymous = watch('is_anonymous');
+  const watchedValues = watch(); // Watch all values
 
   const categoryOptions = Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => ({
     value: key,
@@ -63,12 +60,6 @@ export default function ReportForm() {
     console.log('Form data:', data);
     console.log('Form errors:', errors);
     console.log('Form is valid:', isValid);
-    
-    // Check if there are any errors
-    if (Object.keys(errors).length > 0) {
-      console.log('Form has errors, cannot submit');
-      return;
-    }
     
     setIsSubmitting(true);
     
@@ -94,17 +85,13 @@ export default function ReportForm() {
     const values = getValues();
     console.log('=== FORM DEBUG ===');
     console.log('Current form values:', values);
+    console.log('Watched values:', watchedValues);
     console.log('Form errors:', errors);
-    console.log('Touched fields:', touchedFields);
     console.log('Is form valid:', isValid);
     console.log('Individual field values:');
-    console.log('- corrupt_person_name:', values.corrupt_person_name, '(length:', values.corrupt_person_name?.length, ')');
-    console.log('- designation:', values.designation, '(length:', values.designation?.length, ')');
-    console.log('- area_region:', values.area_region, '(length:', values.area_region?.length, ')');
-    console.log('- category:', values.category);
-    console.log('- description:', values.description, '(length:', values.description?.length, ')');
-    console.log('- approached_police:', values.approached_police);
-    console.log('- was_resolved:', values.was_resolved);
+    Object.entries(values).forEach(([key, value]) => {
+      console.log(`- ${key}:`, value, `(length: ${typeof value === 'string' ? value.length : 'N/A'})`);
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,8 +201,12 @@ export default function ReportForm() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Input
-                    label="Full Name *"
+                  <label htmlFor="corrupt_person_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="corrupt_person_name"
                     {...register('corrupt_person_name', { 
                       required: 'Full name is required',
                       minLength: {
@@ -229,18 +220,25 @@ export default function ReportForm() {
                         return true;
                       }
                     })}
-                    error={errors.corrupt_person_name?.message}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                     placeholder="Enter the corrupt person's full name"
                   />
+                  {errors.corrupt_person_name && (
+                    <p className="text-sm text-red-600 mt-1">{errors.corrupt_person_name.message}</p>
+                  )}
                   {/* Debug info for this field */}
                   <div className="text-xs text-gray-500 mt-1">
-                    Value: "{watch('corrupt_person_name')}" | Length: {watch('corrupt_person_name')?.length || 0}
+                    Value: "{watchedValues.corrupt_person_name || ''}" | Length: {(watchedValues.corrupt_person_name || '').length}
                   </div>
                 </div>
                 
                 <div>
-                  <Input
-                    label="Designation/Job Title *"
+                  <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-1">
+                    Designation/Job Title *
+                  </label>
+                  <input
+                    type="text"
+                    id="designation"
                     {...register('designation', { 
                       required: 'Designation is required',
                       minLength: {
@@ -254,22 +252,32 @@ export default function ReportForm() {
                         return true;
                       }
                     })}
-                    error={errors.designation?.message}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                     placeholder="e.g., Police Officer, Government Official"
                   />
+                  {errors.designation && (
+                    <p className="text-sm text-red-600 mt-1">{errors.designation.message}</p>
+                  )}
                   {/* Debug info for this field */}
                   <div className="text-xs text-gray-500 mt-1">
-                    Value: "{watch('designation')}" | Length: {watch('designation')?.length || 0}
+                    Value: "{watchedValues.designation || ''}" | Length: {(watchedValues.designation || '').length}
                   </div>
                 </div>
               </div>
 
-              <Input
-                label="Address (if known)"
-                {...register('address')}
-                placeholder="Enter address or workplace"
-                helperText="This helps us verify the report"
-              />
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                  Address (if known)
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  {...register('address')}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  placeholder="Enter address or workplace"
+                />
+                <p className="text-sm text-gray-500 mt-1">This helps us verify the report</p>
+              </div>
             </div>
 
             {/* Incident Details */}
@@ -280,8 +288,12 @@ export default function ReportForm() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="relative">
-                  <Input
-                    label="Area/Region *"
+                  <label htmlFor="area_region" className="block text-sm font-medium text-gray-700 mb-1">
+                    Area/Region *
+                  </label>
+                  <input
+                    type="text"
+                    id="area_region"
                     {...register('area_region', { 
                       required: 'Area/Region is required',
                       minLength: {
@@ -295,47 +307,72 @@ export default function ReportForm() {
                         return true;
                       }
                     })}
-                    error={errors.area_region?.message}
+                    className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
                     placeholder="Enter location where corruption occurred"
                   />
                   <MapPin className="absolute right-3 top-8 h-5 w-5 text-gray-400" />
+                  {errors.area_region && (
+                    <p className="text-sm text-red-600 mt-1">{errors.area_region.message}</p>
+                  )}
                   {/* Debug info for this field */}
                   <div className="text-xs text-gray-500 mt-1">
-                    Value: "{watch('area_region')}" | Length: {watch('area_region')?.length || 0}
+                    Value: "{watchedValues.area_region || ''}" | Length: {(watchedValues.area_region || '').length}
                   </div>
                 </div>
                 
-                <Select
-                  label="Category of Corruption *"
-                  {...register('category', { required: 'Category is required' })}
-                  error={errors.category?.message}
-                  options={categoryOptions}
-                />
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                    Category of Corruption *
+                  </label>
+                  <select
+                    id="category"
+                    {...register('category', { required: 'Category is required' })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  >
+                    <option value="">Select a category</option>
+                    {categoryOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.category && (
+                    <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
+                  )}
+                </div>
               </div>
 
-              <Textarea
-                label="Detailed Description *"
-                {...register('description', { 
-                  required: 'Description is required',
-                  minLength: {
-                    value: 10,
-                    message: 'Description must be at least 10 characters'
-                  },
-                  validate: value => {
-                    if (!value || value.trim().length === 0) {
-                      return 'Description is required';
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                  Detailed Description *
+                </label>
+                <textarea
+                  id="description"
+                  rows={6}
+                  {...register('description', { 
+                    required: 'Description is required',
+                    minLength: {
+                      value: 10,
+                      message: 'Description must be at least 10 characters'
+                    },
+                    validate: value => {
+                      if (!value || value.trim().length === 0) {
+                        return 'Description is required';
+                      }
+                      if (value.trim().length < 10) {
+                        return 'Description must be at least 10 characters';
+                      }
+                      return true;
                     }
-                    if (value.trim().length < 10) {
-                      return 'Description must be at least 10 characters';
-                    }
-                    return true;
-                  }
-                })}
-                error={errors.description?.message}
-                placeholder="Provide a detailed account of the corruption incident..."
-                rows={6}
-                helperText="Include dates, amounts, witnesses, and any other relevant details"
-              />
+                  })}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors resize-vertical"
+                  placeholder="Provide a detailed account of the corruption incident..."
+                />
+                {errors.description && (
+                  <p className="text-sm text-red-600 mt-1">{errors.description.message}</p>
+                )}
+                <p className="text-sm text-gray-500 mt-1">Include dates, amounts, witnesses, and any other relevant details</p>
+              </div>
             </div>
 
             {/* Police Involvement */}
@@ -455,29 +492,46 @@ export default function ReportForm() {
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input
-                    label="Your Name"
-                    {...register('reporter_name', {
-                      required: !isAnonymous ? 'Name is required for non-anonymous reports' : false
-                    })}
-                    error={errors.reporter_name?.message}
-                    placeholder="Enter your full name"
-                  />
+                  <div>
+                    <label htmlFor="reporter_name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      id="reporter_name"
+                      {...register('reporter_name', {
+                        required: !isAnonymous ? 'Name is required for non-anonymous reports' : false
+                      })}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                      placeholder="Enter your full name"
+                    />
+                    {errors.reporter_name && (
+                      <p className="text-sm text-red-600 mt-1">{errors.reporter_name.message}</p>
+                    )}
+                  </div>
                   
-                  <Input
-                    label="Your Email"
-                    type="email"
-                    {...register('reporter_email', {
-                      required: !isAnonymous ? 'Email is required for non-anonymous reports' : false,
-                      pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: 'Invalid email address'
-                      }
-                    })}
-                    error={errors.reporter_email?.message}
-                    placeholder="Enter your email address"
-                    helperText="We'll use this to contact you for updates"
-                  />
+                  <div>
+                    <label htmlFor="reporter_email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Your Email
+                    </label>
+                    <input
+                      type="email"
+                      id="reporter_email"
+                      {...register('reporter_email', {
+                        required: !isAnonymous ? 'Email is required for non-anonymous reports' : false,
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: 'Invalid email address'
+                        }
+                      })}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                      placeholder="Enter your email address"
+                    />
+                    {errors.reporter_email && (
+                      <p className="text-sm text-red-600 mt-1">{errors.reporter_email.message}</p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1">We'll use this to contact you for updates</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -489,7 +543,6 @@ export default function ReportForm() {
                 isLoading={isSubmitting}
                 className="w-full py-4 text-lg font-semibold"
                 size="lg"
-                disabled={!isValid && Object.keys(errors).length > 0}
               >
                 {isSubmitting ? 'Submitting Report...' : 'Submit Corruption Report'}
               </Button>

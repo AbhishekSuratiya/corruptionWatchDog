@@ -211,6 +211,70 @@ export class AdminDatabaseService {
     }
   }
 
+  // Delete user (admin only)
+  static async deleteUser(userId: string): Promise<{ error: any }> {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        return { error: new Error('Not authenticated') };
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      return { error: null };
+
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return { error };
+    }
+  }
+
+  // Reset user password (admin only)
+  static async resetUserPassword(userEmail: string): Promise<{ error: any }> {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        return { error: new Error('Not authenticated') };
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-password`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userEmail })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      return { error: null };
+
+    } catch (error) {
+      console.error('Error resetting user password:', error);
+      return { error };
+    }
+  }
+
   // Get reports by user email
   static async getReportsByUser(userEmail: string): Promise<{ data: AdminReport[] | null; error: any }> {
     try {
@@ -224,6 +288,70 @@ export class AdminDatabaseService {
     } catch (error) {
       console.error('Error fetching user reports:', error);
       return { data: null, error };
+    }
+  }
+
+  // Ban/Unban user (admin only)
+  static async toggleUserBan(userId: string, banned: boolean): Promise<{ error: any }> {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        return { error: new Error('Not authenticated') };
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-ban-user`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, banned })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      return { error: null };
+
+    } catch (error) {
+      console.error('Error toggling user ban:', error);
+      return { error };
+    }
+  }
+
+  // Update user metadata (admin only)
+  static async updateUserMetadata(userId: string, metadata: any): Promise<{ error: any }> {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        return { error: new Error('Not authenticated') };
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, metadata })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      return { error: null };
+
+    } catch (error) {
+      console.error('Error updating user metadata:', error);
+      return { error };
     }
   }
 }

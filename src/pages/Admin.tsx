@@ -3,7 +3,8 @@ import {
   Shield, Users, FileText, AlertTriangle, CheckCircle, Clock, 
   Search, Filter, Eye, Edit, Trash2, Download, RefreshCw,
   BarChart3, TrendingUp, UserCheck, Calendar, Mail, MapPin,
-  Flag, ExternalLink, Settings, X, ArrowLeft, Phone, Globe
+  Flag, ExternalLink, Settings, UserX, Ban, UserMinus, MoreVertical,
+  Phone, Globe, Key, Lock
 } from 'lucide-react';
 import { useAdmin } from '../hooks/useAdmin';
 import { AdminDatabaseService, AdminUser, AdminReport, AdminStats } from '../lib/adminDatabase';
@@ -41,11 +42,10 @@ export default function Admin() {
     isAnonymous: undefined as boolean | undefined
   });
 
-  // Detail view states
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
-  const [userReports, setUserReports] = useState<AdminReport[]>([]);
-  const [loadingUserReports, setLoadingUserReports] = useState(false);
+  // User management state
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [showUserActions, setShowUserActions] = useState(false);
+  const [userActionLoading, setUserActionLoading] = useState<string | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -127,33 +127,103 @@ export default function Admin() {
     }
   };
 
-  const handleViewUser = async (user: AdminUser) => {
-    setSelectedUser(user);
-    setLoadingUserReports(true);
-    
-    try {
-      const { data: userReportsData, error } = await AdminDatabaseService.getReportsByUser(user.email);
-      if (error) throw error;
-      setUserReports(userReportsData || []);
-    } catch (err) {
-      console.error('Error loading user reports:', err);
-      setUserReports([]);
-    } finally {
-      setLoadingUserReports(false);
+  // User management functions
+  const handleUserSelect = (userId: string) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUsers(newSelected);
+    setShowUserActions(newSelected.size > 0);
+  };
+
+  const handleSelectAllUsers = () => {
+    if (selectedUsers.size === users.length) {
+      setSelectedUsers(new Set());
+      setShowUserActions(false);
+    } else {
+      setSelectedUsers(new Set(users.map(user => user.id)));
+      setShowUserActions(true);
     }
   };
 
-  const handleViewReport = (report: AdminReport) => {
-    setSelectedReport(report);
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone and will remove all their data.`)) {
+      return;
+    }
+
+    try {
+      setUserActionLoading(userId);
+      const { error } = await AdminDatabaseService.deleteUser(userId);
+      if (error) throw error;
+      
+      // Refresh users list
+      loadData();
+      
+      // Remove from selected if it was selected
+      const newSelected = new Set(selectedUsers);
+      newSelected.delete(userId);
+      setSelectedUsers(newSelected);
+      setShowUserActions(newSelected.size > 0);
+      
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
+    } finally {
+      setUserActionLoading(null);
+    }
   };
 
-  const handleCloseUserDetails = () => {
-    setSelectedUser(null);
-    setUserReports([]);
+  const handleBulkDeleteUsers = async () => {
+    const selectedCount = selectedUsers.size;
+    if (!confirm(`Are you sure you want to delete ${selectedCount} selected user${selectedCount !== 1 ? 's' : ''}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setUserActionLoading('bulk');
+      
+      // Delete users one by one (could be optimized with a bulk delete API)
+      for (const userId of selectedUsers) {
+        const { error } = await AdminDatabaseService.deleteUser(userId);
+        if (error) {
+          console.error(`Error deleting user ${userId}:`, error);
+        }
+      }
+      
+      // Refresh users list
+      loadData();
+      setSelectedUsers(new Set());
+      setShowUserActions(false);
+      
+    } catch (err) {
+      console.error('Error bulk deleting users:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete selected users');
+    } finally {
+      setUserActionLoading(null);
+    }
   };
 
-  const handleCloseReportDetails = () => {
-    setSelectedReport(null);
+  const handleResetUserPassword = async (userId: string, userEmail: string) => {
+    if (!confirm(`Send password reset email to "${userEmail}"?`)) {
+      return;
+    }
+
+    try {
+      setUserActionLoading(userId);
+      const { error } = await AdminDatabaseService.resetUserPassword(userEmail);
+      if (error) throw error;
+      
+      alert(`Password reset email sent to ${userEmail}`);
+      
+    } catch (err) {
+      console.error('Error resetting password:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send password reset email');
+    } finally {
+      setUserActionLoading(null);
+    }
   };
 
   // Access control
@@ -200,446 +270,6 @@ export default function Admin() {
 
   const totalPages = Math.ceil((activeTab === 'users' ? usersCount : reportsCount) / itemsPerPage);
 
-  // User Detail View
-  if (selectedUser) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header with Back Button */}
-          <div className="mb-8 animate-fade-in-up">
-            <div className="flex items-center space-x-4 mb-6">
-              <GradientButton
-                onClick={handleCloseUserDetails}
-                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Users</span>
-              </GradientButton>
-            </div>
-            
-            <div className="text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                User Details
-              </h1>
-              <p className="text-xl text-gray-600">
-                Complete information and reports for this user
-              </p>
-            </div>
-          </div>
-
-          {/* User Information Card */}
-          <FloatingCard className="mb-8 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white text-xl font-bold">
-                  {selectedUser.user_metadata.full_name?.charAt(0) || selectedUser.email.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">{selectedUser.user_metadata.full_name || 'No name provided'}</h2>
-                  <p className="text-blue-100">{selectedUser.email}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {/* Personal Information */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Email</p>
-                        <p className="font-medium text-gray-900">{selectedUser.email}</p>
-                      </div>
-                    </div>
-                    
-                    {selectedUser.user_metadata.phone && (
-                      <div className="flex items-center space-x-3">
-                        <Phone className="h-4 w-4 text-gray-500" />
-                        <div>
-                          <p className="text-sm text-gray-500">Phone</p>
-                          <p className="font-medium text-gray-900">{selectedUser.user_metadata.phone}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {selectedUser.user_metadata.location && (
-                      <div className="flex items-center space-x-3">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <div>
-                          <p className="text-sm text-gray-500">Location</p>
-                          <p className="font-medium text-gray-900">{selectedUser.user_metadata.location}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Account Status */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Status</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Member Since</p>
-                        <p className="font-medium text-gray-900">
-                          {new Date(selectedUser.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <UserCheck className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Email Verified</p>
-                        <p className={`font-medium ${selectedUser.email_confirmed_at ? 'text-green-600' : 'text-red-600'}`}>
-                          {selectedUser.email_confirmed_at ? 'Yes' : 'No'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {selectedUser.last_sign_in_at && (
-                      <div className="flex items-center space-x-3">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <div>
-                          <p className="text-sm text-gray-500">Last Sign In</p>
-                          <p className="font-medium text-gray-900">
-                            {new Date(selectedUser.last_sign_in_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Activity Summary */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Summary</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <FileText className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm text-gray-500">Total Reports</p>
-                        <p className="font-medium text-gray-900 text-2xl">{selectedUser.report_count}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </FloatingCard>
-
-          {/* User Reports */}
-          <FloatingCard className="overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                <FileText className="h-6 w-6 mr-2 text-green-600" />
-                Reports by this User ({selectedUser.report_count})
-              </h2>
-            </div>
-
-            {loadingUserReports ? (
-              <div className="p-6">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <SkeletonLoader key={index} variant="card" className="h-32 mb-4" />
-                ))}
-              </div>
-            ) : userReports.length > 0 ? (
-              <div className="divide-y divide-gray-200">
-                {userReports.map((report) => (
-                  <div key={report.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-4 mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {report.corrupt_person_name}
-                          </h3>
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(report.status)}`}>
-                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                          </span>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
-                          <div>
-                            <span className="font-medium">Designation:</span> {report.designation}
-                          </div>
-                          <div>
-                            <span className="font-medium">Location:</span> {report.area_region}
-                          </div>
-                          <div>
-                            <span className="font-medium">Category:</span> {CORRUPTION_CATEGORIES[report.category as keyof typeof CORRUPTION_CATEGORIES]}
-                          </div>
-                        </div>
-                        
-                        <p className="text-gray-700 mb-3 line-clamp-2">
-                          {report.description}
-                        </p>
-                        
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
-                          <span>Reported: {new Date(report.created_at).toLocaleDateString()}</span>
-                          <span>Upvotes: {report.upvotes}</span>
-                          <span>Downvotes: {report.downvotes}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 ml-4">
-                        <GradientButton 
-                          size="sm" 
-                          className="bg-gradient-to-r from-blue-500 to-blue-600"
-                          onClick={() => handleViewReport(report)}
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>View</span>
-                        </GradientButton>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-12 text-center">
-                <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Reports Found</h3>
-                <p className="text-gray-500">This user hasn't submitted any reports yet.</p>
-              </div>
-            )}
-          </FloatingCard>
-        </div>
-      </div>
-    );
-  }
-
-  // Report Detail View
-  if (selectedReport) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header with Back Button */}
-          <div className="mb-8 animate-fade-in-up">
-            <div className="flex items-center space-x-4 mb-6">
-              <GradientButton
-                onClick={handleCloseReportDetails}
-                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Reports</span>
-              </GradientButton>
-            </div>
-            
-            <div className="text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                Report Details
-              </h1>
-              <p className="text-xl text-gray-600">
-                Complete information for this corruption report
-              </p>
-            </div>
-          </div>
-
-          {/* Report Details Card */}
-          <FloatingCard className="overflow-hidden">
-            {/* Report Header */}
-            <div className="bg-gradient-to-r from-red-600 to-red-700 px-8 py-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">{selectedReport.corrupt_person_name}</h2>
-                  <div className="flex items-center space-x-4 text-red-100">
-                    <span className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {selectedReport.designation}
-                    </span>
-                    <span className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {new Date(selectedReport.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className={`inline-flex px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(selectedReport.status)}`}>
-                    {selectedReport.status.charAt(0).toUpperCase() + selectedReport.status.slice(1)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Report Content */}
-            <div className="p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Description */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <FileText className="h-5 w-5 mr-2 text-red-600" />
-                      Detailed Description
-                    </h3>
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                        {selectedReport.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Evidence Files */}
-                  {selectedReport.evidence_files && selectedReport.evidence_files.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                        <Flag className="h-5 w-5 mr-2 text-red-600" />
-                        Evidence Files ({selectedReport.evidence_files.length})
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {selectedReport.evidence_files.map((file, fileIndex) => (
-                          <div key={fileIndex} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-blue-100 rounded-lg">
-                                <FileText className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">
-                                  {file}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Evidence file
-                                </p>
-                              </div>
-                              <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
-                                <Download className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Admin Actions */}
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Actions</h3>
-                    <div className="flex space-x-4">
-                      <select
-                        value={selectedReport.status}
-                        onChange={(e) => handleStatusUpdate(selectedReport.id, e.target.value)}
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="verified">Verified</option>
-                        <option value="disputed">Disputed</option>
-                        <option value="resolved">Resolved</option>
-                      </select>
-                      
-                      <GradientButton 
-                        variant="danger"
-                        onClick={() => handleDeleteReport(selectedReport.id)}
-                        className="bg-gradient-to-r from-red-500 to-red-600"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Delete</span>
-                      </GradientButton>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                  {/* Report Info */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Information</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Category</label>
-                        <p className="text-gray-900 font-medium">
-                          {CORRUPTION_CATEGORIES[selectedReport.category as keyof typeof CORRUPTION_CATEGORIES] || selectedReport.category}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Location</label>
-                        <p className="text-gray-900 font-medium">{selectedReport.area_region}</p>
-                      </div>
-                      
-                      {selectedReport.address && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Address</label>
-                          <p className="text-gray-900 font-medium">{selectedReport.address}</p>
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Report Type</label>
-                        <p className={`font-medium ${selectedReport.is_anonymous ? 'text-purple-600' : 'text-blue-600'}`}>
-                          {selectedReport.is_anonymous ? 'Anonymous' : 'Verified'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions Taken */}
-                  <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions & Status</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-600">Authorities Approached</span>
-                        <span className={`text-sm font-medium ${selectedReport.approached_authorities ? 'text-green-600' : 'text-red-600'}`}>
-                          {selectedReport.approached_authorities ? 'Yes' : 'No'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-600">Issue Resolved</span>
-                        <span className={`text-sm font-medium ${selectedReport.was_resolved ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {selectedReport.was_resolved ? 'Yes' : 'Pending'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Community Feedback */}
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Community Feedback</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">{selectedReport.upvotes}</div>
-                        <div className="text-sm text-gray-600">Upvotes</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">{selectedReport.downvotes}</div>
-                        <div className="text-sm text-gray-600">Downvotes</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reporter Info (if not anonymous) */}
-                  {!selectedReport.is_anonymous && (selectedReport.reporter_name || selectedReport.reporter_email) && (
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Reporter Information</h3>
-                      <div className="space-y-2">
-                        {selectedReport.reporter_name && (
-                          <div>
-                            <label className="text-sm font-medium text-gray-600">Name</label>
-                            <p className="text-gray-900 font-medium">{selectedReport.reporter_name}</p>
-                          </div>
-                        )}
-                        {selectedReport.reporter_email && (
-                          <div>
-                            <label className="text-sm font-medium text-gray-600">Email</label>
-                            <p className="text-gray-900 font-medium">{selectedReport.reporter_email}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </FloatingCard>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -678,6 +308,8 @@ export default function Admin() {
                 onClick={() => {
                   setActiveTab(tab.id as any);
                   setCurrentPage(1);
+                  setSelectedUsers(new Set());
+                  setShowUserActions(false);
                 }}
                 className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-all duration-300 ${
                   activeTab === tab.id
@@ -822,19 +454,69 @@ export default function Admin() {
               </div>
             </FloatingCard>
 
+            {/* Bulk Actions Bar */}
+            {showUserActions && (
+              <FloatingCard className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm font-medium text-purple-700">
+                      {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedUsers(new Set());
+                        setShowUserActions(false);
+                      }}
+                      className="text-sm text-purple-600 hover:text-purple-800"
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <GradientButton
+                      size="sm"
+                      onClick={handleBulkDeleteUsers}
+                      disabled={userActionLoading === 'bulk'}
+                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                    >
+                      {userActionLoading === 'bulk' ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                      <span>Delete Selected</span>
+                    </GradientButton>
+                  </div>
+                </div>
+              </FloatingCard>
+            )}
+
             {/* Users List */}
             <FloatingCard className="overflow-hidden">
               <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center justify-between">
-                  <span className="flex items-center">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                     <Users className="h-6 w-6 mr-2 text-blue-600" />
                     Registered Users ({usersCount})
-                  </span>
-                  <GradientButton size="sm" className="bg-gradient-to-r from-green-500 to-green-600">
-                    <Download className="w-4 h-4" />
-                    <span>Export</span>
-                  </GradientButton>
-                </h2>
+                  </h2>
+                  <div className="flex items-center space-x-2">
+                    {users.length > 0 && (
+                      <label className="flex items-center space-x-2 text-sm text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.size === users.length && users.length > 0}
+                          onChange={handleSelectAllUsers}
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span>Select All</span>
+                      </label>
+                    )}
+                    <GradientButton size="sm" className="bg-gradient-to-r from-green-500 to-green-600">
+                      <Download className="w-4 h-4" />
+                      <span>Export</span>
+                    </GradientButton>
+                  </div>
+                </div>
               </div>
 
               {isLoading ? (
@@ -858,9 +540,20 @@ export default function Admin() {
                     <div key={user.id} className="p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
+                          {/* Selection Checkbox */}
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.has(user.id)}
+                            onChange={() => handleUserSelect(user.id)}
+                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          
+                          {/* User Avatar */}
                           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold">
                             {user.user_metadata.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                           </div>
+                          
+                          {/* User Info */}
                           <div>
                             <h3 className="text-lg font-semibold text-gray-900">
                               {user.user_metadata.full_name || 'No name provided'}
@@ -880,14 +573,29 @@ export default function Admin() {
                                   {user.user_metadata.location}
                                 </span>
                               )}
+                              {user.user_metadata.phone && (
+                                <span className="flex items-center">
+                                  <Phone className="h-4 w-4 mr-1" />
+                                  {user.user_metadata.phone}
+                                </span>
+                              )}
                             </div>
+                            {user.last_sign_in_at && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                Last active: {new Date(user.last_sign_in_at).toLocaleString()}
+                              </div>
+                            )}
                           </div>
                         </div>
+                        
+                        {/* User Actions */}
                         <div className="flex items-center space-x-4">
                           <div className="text-center">
                             <div className="text-2xl font-bold text-blue-600">{user.report_count}</div>
                             <div className="text-xs text-gray-500">Reports</div>
                           </div>
+                          
+                          {/* Status Badge */}
                           <div className="flex items-center space-x-2">
                             {user.email_confirmed_at ? (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -901,14 +609,47 @@ export default function Admin() {
                               </span>
                             )}
                           </div>
-                          <GradientButton 
-                            size="sm" 
-                            className="bg-gradient-to-r from-purple-500 to-purple-600"
-                            onClick={() => handleViewUser(user)}
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span>View</span>
-                          </GradientButton>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex items-center space-x-2">
+                            <GradientButton 
+                              size="sm" 
+                              className="bg-gradient-to-r from-blue-500 to-blue-600"
+                              onClick={() => window.open(`/admin/user/${user.id}`, '_blank')}
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>View</span>
+                            </GradientButton>
+                            
+                            <GradientButton 
+                              size="sm" 
+                              className="bg-gradient-to-r from-orange-500 to-orange-600"
+                              onClick={() => handleResetUserPassword(user.id, user.email)}
+                              disabled={userActionLoading === user.id}
+                            >
+                              {userActionLoading === user.id ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Key className="w-4 h-4" />
+                              )}
+                              <span>Reset</span>
+                            </GradientButton>
+                            
+                            <GradientButton 
+                              size="sm" 
+                              variant="danger"
+                              onClick={() => handleDeleteUser(user.id, user.email)}
+                              disabled={userActionLoading === user.id}
+                              className="bg-gradient-to-r from-red-500 to-red-600"
+                            >
+                              {userActionLoading === user.id ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                              <span>Delete</span>
+                            </GradientButton>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1047,11 +788,7 @@ export default function Admin() {
                             <option value="resolved">Resolved</option>
                           </select>
                           
-                          <GradientButton 
-                            size="sm" 
-                            className="bg-gradient-to-r from-blue-500 to-blue-600"
-                            onClick={() => handleViewReport(report)}
-                          >
+                          <GradientButton size="sm" className="bg-gradient-to-r from-blue-500 to-blue-600">
                             <Eye className="w-4 h-4" />
                           </GradientButton>
                           

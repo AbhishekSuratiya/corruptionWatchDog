@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Shield, Upload, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Shield, Upload, AlertCircle, CheckCircle, Loader2, User, Mail } from 'lucide-react';
 import Button from '../components/UI/Button';
 import LocationAutocomplete from '../components/UI/LocationAutocomplete';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 import { DatabaseService } from '../lib/database';
+import { useAuth } from '../hooks/useAuth';
 
 interface ReportFormData {
   corrupt_person_name: string;
@@ -21,6 +22,7 @@ interface ReportFormData {
 }
 
 export default function ReportForm() {
+  const { user, loading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export default function ReportForm() {
   } = useForm<ReportFormData>({
     mode: 'onChange',
     defaultValues: {
-      is_anonymous: true,
+      is_anonymous: !user, // Default to anonymous if not logged in
       approached_authorities: '',
       was_resolved: '',
       corrupt_person_name: '',
@@ -52,6 +54,42 @@ export default function ReportForm() {
   
   const isAnonymous = watch('is_anonymous');
   const areaRegion = watch('area_region');
+
+  // Auto-fill user details when user is logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      // Set default to non-anonymous for logged-in users
+      setValue('is_anonymous', false);
+      
+      // Auto-fill user details
+      const fullName = user.user_metadata?.full_name || '';
+      const email = user.email || '';
+      
+      setValue('reporter_name', fullName);
+      setValue('reporter_email', email);
+    } else if (!user && !authLoading) {
+      // Set default to anonymous for non-logged-in users
+      setValue('is_anonymous', true);
+      setValue('reporter_name', '');
+      setValue('reporter_email', '');
+    }
+  }, [user, authLoading, setValue]);
+
+  // Update form fields when anonymous toggle changes
+  useEffect(() => {
+    if (isAnonymous) {
+      // Clear user details when switching to anonymous
+      setValue('reporter_name', '');
+      setValue('reporter_email', '');
+    } else if (user) {
+      // Re-fill user details when switching back to non-anonymous
+      const fullName = user.user_metadata?.full_name || '';
+      const email = user.email || '';
+      
+      setValue('reporter_name', fullName);
+      setValue('reporter_email', email);
+    }
+  }, [isAnonymous, user, setValue]);
 
   const categoryOptions = Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => ({
     value: key,
@@ -156,6 +194,27 @@ export default function ReportForm() {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Your voice matters. Help us fight corruption by reporting incidents safely and securely.
           </p>
+          
+          {/* User Status Indicator */}
+          {!authLoading && (
+            <div className="mt-6 inline-flex items-center space-x-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+              {user ? (
+                <>
+                  <User className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-700">
+                    Logged in as: <span className="font-medium">{user.email}</span>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Shield className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm text-gray-700">
+                    Reporting as guest (anonymous by default)
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Error Alert */}
@@ -187,11 +246,14 @@ export default function ReportForm() {
                       className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                     />
                     <label htmlFor="is_anonymous" className="text-yellow-700">
-                      Report anonymously (recommended for safety)
+                      Report anonymously {user ? '(override logged-in status)' : '(recommended for safety)'}
                     </label>
                   </div>
                   <p className="text-sm text-yellow-600 mt-2">
-                    Anonymous reports help protect your identity while still allowing us to investigate the corruption.
+                    {user 
+                      ? 'Your details are auto-filled from your account. Check this box to report anonymously instead.'
+                      : 'Anonymous reports help protect your identity while still allowing us to investigate the corruption.'
+                    }
                   </p>
                 </div>
               </div>
@@ -478,55 +540,98 @@ export default function ReportForm() {
               </div>
             </div>
 
-            {/* Reporter Details (if not anonymous) */}
+            {/* Reporter Details (if not anonymous and not auto-filled) */}
             {!isAnonymous && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Your Details
+                  {user && (
+                    <span className="text-sm font-normal text-green-600 ml-2">
+                      (Auto-filled from your account)
+                    </span>
+                  )}
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="reporter_name" className="block text-sm font-medium text-gray-700 mb-1">
-                      Your Name
+                      Your Name {user && <span className="text-green-600">✓</span>}
                     </label>
-                    <input
-                      type="text"
-                      id="reporter_name"
-                      {...register('reporter_name', {
-                        required: !isAnonymous ? 'Name is required for non-anonymous reports' : false
-                      })}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                      placeholder="Enter your full name"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="reporter_name"
+                        {...register('reporter_name', {
+                          required: !isAnonymous ? 'Name is required for non-anonymous reports' : false
+                        })}
+                        className={`block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                          user ? 'bg-green-50 border-green-200' : ''
+                        }`}
+                        placeholder="Enter your full name"
+                        readOnly={!!user}
+                      />
+                      {user && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <User className="h-4 w-4 text-green-600" />
+                        </div>
+                      )}
+                    </div>
                     {errors.reporter_name && (
                       <p className="text-sm text-red-600 mt-1">{errors.reporter_name.message}</p>
+                    )}
+                    {user && (
+                      <p className="text-sm text-green-600 mt-1">Auto-filled from your account</p>
                     )}
                   </div>
                   
                   <div>
                     <label htmlFor="reporter_email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Your Email
+                      Your Email {user && <span className="text-green-600">✓</span>}
                     </label>
-                    <input
-                      type="email"
-                      id="reporter_email"
-                      {...register('reporter_email', {
-                        required: !isAnonymous ? 'Email is required for non-anonymous reports' : false,
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Invalid email address'
-                        }
-                      })}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                      placeholder="Enter your email address"
-                    />
+                    <div className="relative">
+                      <input
+                        type="email"
+                        id="reporter_email"
+                        {...register('reporter_email', {
+                          required: !isAnonymous ? 'Email is required for non-anonymous reports' : false,
+                          pattern: {
+                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                            message: 'Invalid email address'
+                          }
+                        })}
+                        className={`block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                          user ? 'bg-green-50 border-green-200' : ''
+                        }`}
+                        placeholder="Enter your email address"
+                        readOnly={!!user}
+                      />
+                      {user && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Mail className="h-4 w-4 text-green-600" />
+                        </div>
+                      )}
+                    </div>
                     {errors.reporter_email && (
                       <p className="text-sm text-red-600 mt-1">{errors.reporter_email.message}</p>
                     )}
-                    <p className="text-sm text-gray-500 mt-1">We'll use this to contact you for updates</p>
+                    {user ? (
+                      <p className="text-sm text-green-600 mt-1">Auto-filled from your account</p>
+                    ) : (
+                      <p className="text-sm text-gray-500 mt-1">We'll use this to contact you for updates</p>
+                    )}
                   </div>
                 </div>
+
+                {!user && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="h-5 w-5 text-blue-600" />
+                      <p className="text-sm text-blue-700">
+                        <strong>Tip:</strong> Sign up for an account to auto-fill your details and track your reports!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

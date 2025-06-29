@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Shield, Upload, AlertCircle, CheckCircle, Loader2, User, Mail, X, FileText, Image, Video } from 'lucide-react';
+import { Shield, Upload, AlertCircle, CheckCircle, Loader2, User, Mail, X, FileText, Image, Video, Info } from 'lucide-react';
 import Button from '../components/UI/Button';
 import LocationAutocomplete from '../components/UI/LocationAutocomplete';
+import CorruptPersonAutocomplete from '../components/UI/CorruptPersonAutocomplete';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 import { DatabaseService } from '../lib/database';
 import { FileStorageService, UploadedFile } from '../lib/fileStorage';
@@ -31,6 +32,12 @@ export default function ReportForm() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [selectedPersonInfo, setSelectedPersonInfo] = useState<{
+    name: string;
+    designation: string;
+    area: string;
+    reportCount: number;
+  } | null>(null);
   
   const { 
     register, 
@@ -58,6 +65,7 @@ export default function ReportForm() {
   
   const isAnonymous = watch('is_anonymous');
   const areaRegion = watch('area_region');
+  const corruptPersonName = watch('corrupt_person_name');
 
   // Auto-fill user details when user is logged in
   useEffect(() => {
@@ -99,6 +107,18 @@ export default function ReportForm() {
     value: key,
     label
   }));
+
+  const handlePersonSelect = (person: { name: string; designation: string; area: string; reportCount: number }) => {
+    setSelectedPersonInfo(person);
+    
+    // Auto-fill designation and area if they're empty
+    if (!watch('designation')) {
+      setValue('designation', person.designation);
+    }
+    if (!watch('area_region')) {
+      setValue('area_region', person.area);
+    }
+  };
 
   const onSubmit = async (data: ReportFormData) => {
     setIsSubmitting(true);
@@ -155,6 +175,7 @@ export default function ReportForm() {
       reset();
       setFiles([]);
       setUploadedFiles([]);
+      setSelectedPersonInfo(null);
     } catch (error) {
       console.error('Error submitting report:', error);
       setSubmitError(error instanceof Error ? error.message : 'Failed to submit report. Please try again.');
@@ -197,6 +218,14 @@ export default function ReportForm() {
 
   const handleLocationChange = (value: string) => {
     setValue('area_region', value, { shouldValidate: true });
+  };
+
+  const handleCorruptPersonChange = (value: string) => {
+    setValue('corrupt_person_name', value, { shouldValidate: true });
+    // Clear selected person info if name changes
+    if (selectedPersonInfo && selectedPersonInfo.name !== value) {
+      setSelectedPersonInfo(null);
+    }
   };
 
   const getFileIcon = (file: File) => {
@@ -345,12 +374,18 @@ export default function ReportForm() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="corrupt_person_name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
+                  <CorruptPersonAutocomplete
+                    label="Full Name"
+                    value={corruptPersonName}
+                    onChange={handleCorruptPersonChange}
+                    placeholder="Enter the corrupt person's full name..."
+                    error={errors.corrupt_person_name?.message}
+                    required
+                    onPersonSelect={handlePersonSelect}
+                  />
+                  {/* Hidden input for form validation */}
                   <input
-                    type="text"
-                    id="corrupt_person_name"
+                    type="hidden"
                     {...register('corrupt_person_name', { 
                       required: 'Full name is required',
                       minLength: {
@@ -364,17 +399,15 @@ export default function ReportForm() {
                         return true;
                       }
                     })}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                    placeholder="Enter the corrupt person's full name"
                   />
-                  {errors.corrupt_person_name && (
-                    <p className="text-sm text-red-600 mt-1">{errors.corrupt_person_name.message}</p>
-                  )}
                 </div>
                 
                 <div>
                   <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-1">
                     Designation/Job Title *
+                    {selectedPersonInfo && (
+                      <span className="text-green-600 ml-2 text-xs">(Auto-filled from previous report)</span>
+                    )}
                   </label>
                   <input
                     type="text"
@@ -392,7 +425,9 @@ export default function ReportForm() {
                         return true;
                       }
                     })}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                    className={`block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                      selectedPersonInfo ? 'bg-green-50 border-green-200' : ''
+                    }`}
                     placeholder="e.g., Government Official, Manager, Inspector"
                   />
                   {errors.designation && (
@@ -400,6 +435,29 @@ export default function ReportForm() {
                   )}
                 </div>
               </div>
+
+              {/* Selected Person Info Alert */}
+              {selectedPersonInfo && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <Info className="h-5 w-5 text-orange-600 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-semibold text-orange-800 mb-1">
+                        Previous Reports Found
+                      </h4>
+                      <p className="text-sm text-orange-700">
+                        <strong>{selectedPersonInfo.name}</strong> has been reported <strong>{selectedPersonInfo.reportCount}</strong> time{selectedPersonInfo.reportCount !== 1 ? 's' : ''} before. 
+                        {selectedPersonInfo.reportCount > 1 && (
+                          <span className="text-red-700 font-medium"> This person is a repeat offender.</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-orange-600 mt-1">
+                        Designation and location have been auto-filled from previous reports. You can modify them if needed.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
@@ -432,6 +490,11 @@ export default function ReportForm() {
                     error={errors.area_region?.message}
                     required
                   />
+                  {selectedPersonInfo && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Auto-filled from previous report: {selectedPersonInfo.area}
+                    </p>
+                  )}
                   {/* Hidden input for form validation */}
                   <input
                     type="hidden"

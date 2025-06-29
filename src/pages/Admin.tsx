@@ -49,6 +49,11 @@ export default function Admin() {
   const [showUserActions, setShowUserActions] = useState(false);
   const [userActionLoading, setUserActionLoading] = useState<string | null>(null);
 
+  // Report management state
+  const [selectedReports, setSelectedReports] = useState<Set<string>>(new Set());
+  const [showReportActions, setShowReportActions] = useState(false);
+  const [reportActionLoading, setReportActionLoading] = useState<string | null>(null);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -121,6 +126,12 @@ export default function Admin() {
       const { error } = await AdminDatabaseService.deleteReport(reportId);
       if (error) throw error;
       
+      // Remove from selected if it was selected
+      const newSelected = new Set(selectedReports);
+      newSelected.delete(reportId);
+      setSelectedReports(newSelected);
+      setShowReportActions(newSelected.size > 0);
+      
       // Refresh reports
       loadData();
     } catch (err) {
@@ -148,6 +159,126 @@ export default function Admin() {
     } else {
       setSelectedUsers(new Set(users.map(user => user.id)));
       setShowUserActions(true);
+    }
+  };
+
+  // Report management functions
+  const handleReportSelect = (reportId: string) => {
+    const newSelected = new Set(selectedReports);
+    if (newSelected.has(reportId)) {
+      newSelected.delete(reportId);
+    } else {
+      newSelected.add(reportId);
+    }
+    setSelectedReports(newSelected);
+    setShowReportActions(newSelected.size > 0);
+  };
+
+  const handleSelectAllReports = () => {
+    if (selectedReports.size === reports.length) {
+      setSelectedReports(new Set());
+      setShowReportActions(false);
+    } else {
+      setSelectedReports(new Set(reports.map(report => report.id)));
+      setShowReportActions(true);
+    }
+  };
+
+  const handleBulkDeleteReports = async () => {
+    const selectedCount = selectedReports.size;
+    if (!confirm(`Are you sure you want to delete ${selectedCount} selected report${selectedCount !== 1 ? 's' : ''}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setReportActionLoading('bulk-delete');
+      
+      // Delete reports one by one (could be optimized with a bulk delete API)
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const reportId of selectedReports) {
+        try {
+          const { error } = await AdminDatabaseService.deleteReport(reportId);
+          if (error) {
+            console.error(`Error deleting report ${reportId}:`, error);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Error deleting report ${reportId}:`, err);
+          errorCount++;
+        }
+      }
+      
+      // Show result message
+      if (errorCount === 0) {
+        setError(null);
+        // Could show success message here if needed
+      } else {
+        setError(`Successfully deleted ${successCount} reports, but ${errorCount} failed to delete.`);
+      }
+      
+      // Refresh reports list
+      loadData();
+      setSelectedReports(new Set());
+      setShowReportActions(false);
+      
+    } catch (err) {
+      console.error('Error bulk deleting reports:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete selected reports');
+    } finally {
+      setReportActionLoading(null);
+    }
+  };
+
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    const selectedCount = selectedReports.size;
+    if (!confirm(`Are you sure you want to update ${selectedCount} selected report${selectedCount !== 1 ? 's' : ''} to "${newStatus}" status?`)) {
+      return;
+    }
+
+    try {
+      setReportActionLoading('bulk-status');
+      
+      // Update reports one by one
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const reportId of selectedReports) {
+        try {
+          const { error } = await AdminDatabaseService.updateReportStatus(reportId, newStatus);
+          if (error) {
+            console.error(`Error updating report ${reportId}:`, error);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Error updating report ${reportId}:`, err);
+          errorCount++;
+        }
+      }
+      
+      // Show result message
+      if (errorCount === 0) {
+        setError(null);
+        // Could show success message here if needed
+      } else {
+        setError(`Successfully updated ${successCount} reports, but ${errorCount} failed to update.`);
+      }
+      
+      // Refresh reports list
+      loadData();
+      setSelectedReports(new Set());
+      setShowReportActions(false);
+      
+    } catch (err) {
+      console.error('Error bulk updating reports:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update selected reports');
+    } finally {
+      setReportActionLoading(null);
     }
   };
 
@@ -316,6 +447,8 @@ export default function Admin() {
                   setCurrentPage(1);
                   setSelectedUsers(new Set());
                   setShowUserActions(false);
+                  setSelectedReports(new Set());
+                  setShowReportActions(false);
                 }}
                 className={`flex-1 flex items-center justify-center space-x-2 px-3 lg:px-6 py-3 lg:py-4 font-medium transition-all duration-300 ${
                   activeTab === tab.id
@@ -708,19 +841,96 @@ export default function Admin() {
               </div>
             </FloatingCard>
 
+            {/* Bulk Report Actions Bar */}
+            {showReportActions && (
+              <FloatingCard className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm font-medium text-green-700">
+                      {selectedReports.size} report{selectedReports.size !== 1 ? 's' : ''} selected
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedReports(new Set());
+                        setShowReportActions(false);
+                      }}
+                      className="text-sm text-green-600 hover:text-green-800"
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Bulk Status Updates */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Update to:</span>
+                      <button
+                        onClick={() => handleBulkStatusUpdate('verified')}
+                        disabled={reportActionLoading === 'bulk-status'}
+                        className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm disabled:opacity-50"
+                      >
+                        Verified
+                      </button>
+                      <button
+                        onClick={() => handleBulkStatusUpdate('disputed')}
+                        disabled={reportActionLoading === 'bulk-status'}
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm disabled:opacity-50"
+                      >
+                        Disputed
+                      </button>
+                      <button
+                        onClick={() => handleBulkStatusUpdate('resolved')}
+                        disabled={reportActionLoading === 'bulk-status'}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm disabled:opacity-50"
+                      >
+                        Resolved
+                      </button>
+                    </div>
+                    
+                    {/* Bulk Delete */}
+                    <GradientButton
+                      size="sm"
+                      onClick={handleBulkDeleteReports}
+                      disabled={reportActionLoading === 'bulk-delete'}
+                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                    >
+                      {reportActionLoading === 'bulk-delete' ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                      <span className="hidden lg:inline">Delete Selected</span>
+                    </GradientButton>
+                  </div>
+                </div>
+              </FloatingCard>
+            )}
+
             {/* Reports List - Responsive */}
             <FloatingCard className="overflow-hidden">
               <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-                <h2 className="text-lg lg:text-xl font-semibold text-gray-900 flex items-center justify-between">
-                  <span className="flex items-center">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg lg:text-xl font-semibold text-gray-900 flex items-center">
                     <FileText className="h-5 w-5 lg:h-6 lg:w-6 mr-2 text-green-600" />
                     Corruption Reports ({reportsCount})
-                  </span>
-                  <GradientButton size="sm" className="bg-gradient-to-r from-green-500 to-green-600">
-                    <Download className="w-4 h-4" />
-                    <span className="hidden lg:inline">Export</span>
-                  </GradientButton>
-                </h2>
+                  </h2>
+                  <div className="flex items-center space-x-2">
+                    {reports.length > 0 && (
+                      <label className="flex items-center space-x-2 text-xs lg:text-sm text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={selectedReports.size === reports.length && reports.length > 0}
+                          onChange={handleSelectAllReports}
+                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="hidden lg:inline">Select All</span>
+                      </label>
+                    )}
+                    <GradientButton size="sm" className="bg-gradient-to-r from-green-500 to-green-600">
+                      <Download className="w-4 h-4" />
+                      <span className="hidden lg:inline">Export</span>
+                    </GradientButton>
+                  </div>
+                </div>
               </div>
 
               {isLoading ? (
@@ -734,45 +944,55 @@ export default function Admin() {
                   {reports.map((report) => (
                     <div key={report.id} className="p-4 lg:p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-4 mb-3">
-                            <h3 className="text-base lg:text-lg font-semibold text-gray-900 truncate">
-                              {report.corrupt_person_name}
-                            </h3>
-                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(report.status)}`}>
-                              {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                            </span>
-                            {report.is_anonymous && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                <Shield className="h-3 w-3 mr-1" />
-                                Anonymous
+                        <div className="flex items-start space-x-3 flex-1 min-w-0">
+                          {/* Selection Checkbox */}
+                          <input
+                            type="checkbox"
+                            checked={selectedReports.has(report.id)}
+                            onChange={() => handleReportSelect(report.id)}
+                            className="mt-1 rounded border-gray-300 text-green-600 focus:ring-green-500 flex-shrink-0"
+                          />
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-4 mb-3">
+                              <h3 className="text-base lg:text-lg font-semibold text-gray-900 truncate">
+                                {report.corrupt_person_name}
+                              </h3>
+                              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(report.status)}`}>
+                                {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
                               </span>
-                            )}
-                          </div>
-                          
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 lg:gap-4 text-xs lg:text-sm text-gray-600 mb-3">
-                            <div>
-                              <span className="font-medium">Designation:</span> {report.designation}
+                              {report.is_anonymous && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Anonymous
+                                </span>
+                              )}
                             </div>
-                            <div>
-                              <span className="font-medium">Location:</span> {report.area_region}
+                            
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 lg:gap-4 text-xs lg:text-sm text-gray-600 mb-3">
+                              <div>
+                                <span className="font-medium">Designation:</span> {report.designation}
+                              </div>
+                              <div>
+                                <span className="font-medium">Location:</span> {report.area_region}
+                              </div>
+                              <div>
+                                <span className="font-medium">Category:</span> {CORRUPTION_CATEGORIES[report.category as keyof typeof CORRUPTION_CATEGORIES]}
+                              </div>
                             </div>
-                            <div>
-                              <span className="font-medium">Category:</span> {CORRUPTION_CATEGORIES[report.category as keyof typeof CORRUPTION_CATEGORIES]}
+                            
+                            <p className="text-sm lg:text-base text-gray-700 mb-3 line-clamp-2">
+                              {report.description}
+                            </p>
+                            
+                            <div className="flex items-center space-x-4 text-xs text-gray-500">
+                              <span>Reported: {new Date(report.created_at).toLocaleDateString()}</span>
+                              {!report.is_anonymous && report.reporter_email && (
+                                <span>By: {report.reporter_email}</span>
+                              )}
+                              <span>↑{report.upvotes}</span>
+                              <span>↓{report.downvotes}</span>
                             </div>
-                          </div>
-                          
-                          <p className="text-sm lg:text-base text-gray-700 mb-3 line-clamp-2">
-                            {report.description}
-                          </p>
-                          
-                          <div className="flex items-center space-x-4 text-xs text-gray-500">
-                            <span>Reported: {new Date(report.created_at).toLocaleDateString()}</span>
-                            {!report.is_anonymous && report.reporter_email && (
-                              <span>By: {report.reporter_email}</span>
-                            )}
-                            <span>↑{report.upvotes}</span>
-                            <span>↓{report.downvotes}</span>
                           </div>
                         </div>
                         

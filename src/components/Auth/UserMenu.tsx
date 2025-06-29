@@ -41,41 +41,34 @@ export default function UserMenu({ user }: UserMenuProps) {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* User Button - Improved responsive design */}
+      {/* User Button - Fixed layout with proper text visibility */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 group min-w-0"
+        className="flex items-center space-x-2 p-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 group"
       >
         {/* Avatar - Fixed size */}
         <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center text-black font-bold text-sm shadow-lg flex-shrink-0">
           {getUserInitials()}
         </div>
         
-        {/* User Info - Better responsive handling */}
-        <div className="hidden lg:block text-left min-w-0 flex-1 max-w-[200px]">
-          <div className="text-sm font-medium text-white truncate">
+        {/* User Info - Visible on medium screens and up */}
+        <div className="hidden md:flex flex-col text-left min-w-0">
+          <div className="text-sm font-medium text-white leading-tight max-w-[150px] truncate">
             {getUserDisplayName()}
           </div>
-          <div className="text-xs text-white/70 truncate">
+          <div className="text-xs text-white/80 leading-tight max-w-[150px] truncate">
             {user?.email}
           </div>
         </div>
         
-        {/* Mobile-only compact display */}
-        <div className="block lg:hidden text-left min-w-0 flex-1">
-          <div className="text-sm font-medium text-white truncate max-w-[120px]">
-            {getUserDisplayName()}
-          </div>
-        </div>
-        
         {/* Chevron - Fixed size */}
-        <ChevronDown className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 text-white/80 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu - Improved positioning and sizing */}
+      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
-          {/* User Info Header - Better layout for long emails */}
+          {/* User Info Header */}
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-start space-x-3">
               {/* Avatar */}
@@ -83,7 +76,7 @@ export default function UserMenu({ user }: UserMenuProps) {
                 {getUserInitials()}
               </div>
               
-              {/* User details - Improved text wrapping */}
+              {/* User details */}
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-gray-900 break-words leading-tight">
                   {getUserDisplayName()}

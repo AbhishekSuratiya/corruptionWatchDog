@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter, RefreshCw, Eye } from 'lucide-react';
+import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter, RefreshCw, Eye, X, FileText, Image, Video, Download, ArrowLeft, Clock, CheckCircle, XCircle } from 'lucide-react';
 import GradientButton from '../components/UI/GradientButton';
 import ModernInput from '../components/UI/ModernInput';
 import FloatingCard from '../components/UI/FloatingCard';
@@ -17,6 +17,26 @@ interface DefaulterProfile {
   status: string;
 }
 
+interface DetailedReport {
+  id: string;
+  corrupt_person_name: string;
+  designation: string;
+  address?: string;
+  area_region: string;
+  description: string;
+  category: string;
+  approached_authorities: boolean;
+  was_resolved: boolean;
+  evidence_files?: string[];
+  is_anonymous: boolean;
+  reporter_name?: string;
+  reporter_email?: string;
+  status: string;
+  created_at: string;
+  upvotes: number;
+  downvotes: number;
+}
+
 export default function Directory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -26,6 +46,12 @@ export default function Directory() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [showAllReports, setShowAllReports] = useState(false);
   const [minReports, setMinReports] = useState(2);
+  
+  // Detailed view state
+  const [selectedDefaulter, setSelectedDefaulter] = useState<string | null>(null);
+  const [detailedReports, setDetailedReports] = useState<DetailedReport[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDefaulters();
@@ -85,6 +111,44 @@ export default function Directory() {
     }
   };
 
+  const fetchDetailedReports = async (personName: string) => {
+    try {
+      setLoadingDetails(true);
+      setDetailsError(null);
+      
+      console.log('Fetching detailed reports for:', personName);
+      
+      const { data, error } = await DatabaseService.getReportsByPerson(personName);
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch detailed reports');
+      }
+
+      if (data) {
+        setDetailedReports(data as DetailedReport[]);
+      } else {
+        setDetailedReports([]);
+      }
+    } catch (err) {
+      console.error('Error fetching detailed reports:', err);
+      setDetailsError(err instanceof Error ? err.message : 'Failed to load detailed reports');
+      setDetailedReports([]);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleDefaulterClick = (personName: string) => {
+    setSelectedDefaulter(personName);
+    fetchDetailedReports(personName);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedDefaulter(null);
+    setDetailedReports([]);
+    setDetailsError(null);
+  };
+
   const filteredDefaulters = defaulters.filter(defaulter => {
     const matchesSearch = defaulter.corrupt_person_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          defaulter.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,6 +189,310 @@ export default function Directory() {
     }
   };
 
+  const getReportStatusColor = (status: string) => {
+    switch (status) {
+      case 'verified': return 'bg-green-100 text-green-800 border-green-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'disputed': return 'bg-red-100 text-red-800 border-red-200';
+      case 'resolved': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getEvidenceIcon = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+      return <Image className="h-4 w-4" />;
+    } else if (['mp4', 'avi', 'mov', 'wmv'].includes(ext || '')) {
+      return <Video className="h-4 w-4" />;
+    } else {
+      return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  // If detailed view is open, show it
+  if (selectedDefaulter) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header with Back Button */}
+          <div className="mb-8 animate-fade-in-up">
+            <div className="flex items-center space-x-4 mb-6">
+              <GradientButton
+                onClick={handleCloseDetails}
+                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Directory</span>
+              </GradientButton>
+            </div>
+            
+            <div className="text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Reports for 
+                <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> {selectedDefaulter}</span>
+              </h1>
+              <p className="text-xl text-gray-600">
+                All corruption reports filed against this individual
+              </p>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {detailsError && (
+            <FloatingCard className="mb-8 bg-red-50 border-2 border-red-200">
+              <div className="p-6">
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-red-800">Error Loading Reports</h3>
+                    <p className="text-red-700">{detailsError}</p>
+                    <button 
+                      onClick={() => fetchDetailedReports(selectedDefaulter)}
+                      className="mt-2 text-red-600 hover:text-red-800 font-medium"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </FloatingCard>
+          )}
+
+          {/* Reports List */}
+          <div className="space-y-6">
+            {loadingDetails ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <SkeletonLoader key={index} variant="card" className="h-64" />
+              ))
+            ) : detailedReports.length > 0 ? (
+              detailedReports.map((report, index) => (
+                <FloatingCard key={report.id} delay={index * 100} className="overflow-hidden">
+                  {/* Report Header */}
+                  <div className="bg-gradient-to-r from-red-600 to-red-700 px-8 py-6 text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-2">{report.corrupt_person_name}</h2>
+                        <div className="flex items-center space-x-4 text-red-100">
+                          <span className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {report.designation}
+                          </span>
+                          <span className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {new Date(report.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-flex px-4 py-2 rounded-full text-sm font-medium border ${getReportStatusColor(report.status)}`}>
+                          {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Report Details */}
+                  <div className="p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      {/* Main Content */}
+                      <div className="lg:col-span-2 space-y-6">
+                        {/* Description */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                            <FileText className="h-5 w-5 mr-2 text-red-600" />
+                            Detailed Description
+                          </h3>
+                          <div className="bg-gray-50 rounded-xl p-6">
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                              {report.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Evidence Files */}
+                        {report.evidence_files && report.evidence_files.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                              <Flag className="h-5 w-5 mr-2 text-red-600" />
+                              Evidence Files ({report.evidence_files.length})
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {report.evidence_files.map((file, fileIndex) => (
+                                <div key={fileIndex} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                      {getEvidenceIcon(file)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {file}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        Evidence file
+                                      </p>
+                                    </div>
+                                    <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
+                                      <Download className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Sidebar */}
+                      <div className="space-y-6">
+                        {/* Report Info */}
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Information</h3>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">Category</label>
+                              <p className="text-gray-900 font-medium">
+                                {CORRUPTION_CATEGORIES[report.category as keyof typeof CORRUPTION_CATEGORIES] || report.category}
+                              </p>
+                            </div>
+                            
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">Location</label>
+                              <p className="text-gray-900 font-medium">{report.area_region}</p>
+                            </div>
+                            
+                            {report.address && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">Address</label>
+                                <p className="text-gray-900 font-medium">{report.address}</p>
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">Reported</label>
+                              <p className="text-gray-900 font-medium">
+                                {new Date(report.created_at).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions Taken */}
+                        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions & Status</h3>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-600">Authorities Approached</span>
+                              <div className="flex items-center">
+                                {report.approached_authorities ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <XCircle className="h-5 w-5 text-red-600" />
+                                )}
+                                <span className={`ml-2 text-sm font-medium ${
+                                  report.approached_authorities ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {report.approached_authorities ? 'Yes' : 'No'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-600">Issue Resolved</span>
+                              <div className="flex items-center">
+                                {report.was_resolved ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <Clock className="h-5 w-5 text-yellow-600" />
+                                )}
+                                <span className={`ml-2 text-sm font-medium ${
+                                  report.was_resolved ? 'text-green-600' : 'text-yellow-600'
+                                }`}>
+                                  {report.was_resolved ? 'Yes' : 'Pending'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-600">Report Type</span>
+                              <span className={`text-sm font-medium ${
+                                report.is_anonymous ? 'text-purple-600' : 'text-blue-600'
+                              }`}>
+                                {report.is_anonymous ? 'Anonymous' : 'Verified'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Community Feedback */}
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Community Feedback</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-600">{report.upvotes}</div>
+                              <div className="text-sm text-gray-600">Upvotes</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-red-600">{report.downvotes}</div>
+                              <div className="text-sm text-gray-600">Downvotes</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Reporter Info (if not anonymous) */}
+                        {!report.is_anonymous && (report.reporter_name || report.reporter_email) && (
+                          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Reporter Information</h3>
+                            <div className="space-y-2">
+                              {report.reporter_name && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Name</label>
+                                  <p className="text-gray-900 font-medium">{report.reporter_name}</p>
+                                </div>
+                              )}
+                              {report.reporter_email && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-600">Email</label>
+                                  <p className="text-gray-900 font-medium">{report.reporter_email}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </FloatingCard>
+              ))
+            ) : (
+              <FloatingCard className="text-center py-16">
+                <div className="flex justify-center mb-6">
+                  <div className="p-4 bg-gray-100 rounded-full">
+                    <FileText className="h-12 w-12 text-gray-400" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Reports Found</h3>
+                <p className="text-gray-500 mb-6">
+                  No detailed reports were found for {selectedDefaulter}.
+                </p>
+                <GradientButton onClick={handleCloseDetails}>
+                  Back to Directory
+                </GradientButton>
+              </FloatingCard>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main directory view
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -144,7 +512,7 @@ export default function Directory() {
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Public registry of corruption reports from both anonymous and logged-in users. 
-            Help your community stay informed and vigilant.
+            Click on any person to view all reports filed against them.
           </p>
         </div>
 
@@ -251,8 +619,8 @@ export default function Directory() {
             </p>
             <p className="text-sm text-gray-500 mt-1">
               {minReports === 1 
-                ? 'Showing all corruption reports including single reports' 
-                : `Showing individuals with ${minReports}+ reports (repeat offenders)`
+                ? 'Click on any person to view all their reports with full details' 
+                : `Click on any defaulter to view all ${minReports}+ reports with full details`
               }
             </p>
           </div>
@@ -270,7 +638,8 @@ export default function Directory() {
               <FloatingCard 
                 key={`${defaulter.corrupt_person_name}-${defaulter.designation}-${index}`}
                 delay={index * 100}
-                className="overflow-hidden group"
+                className="overflow-hidden group cursor-pointer"
+                onClick={() => handleDefaulterClick(defaulter.corrupt_person_name)}
               >
                 {/* Header with Badge */}
                 <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
@@ -321,8 +690,8 @@ export default function Directory() {
                   
                   <div className="flex space-x-3">
                     <GradientButton size="sm" className="flex-1 text-xs">
-                      <Flag className="h-3 w-3" />
-                      <span>View Reports</span>
+                      <Eye className="h-3 w-3" />
+                      <span>View All Reports</span>
                     </GradientButton>
                     <GradientButton variant="secondary" size="sm" className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
                       <ExternalLink className="h-3 w-3" />
@@ -376,8 +745,8 @@ export default function Directory() {
                 <p className="text-yellow-700 leading-relaxed">
                   This directory contains corruption reports from our database, 
                   including reports submitted both anonymously and by logged-in users. 
-                  All information is based on user submissions and should be verified independently. 
-                  If you believe any information is incorrect, you can file a dispute through our claim system.
+                  Click on any person to view detailed reports with full descriptions and evidence.
+                  All information is based on user submissions and should be verified independently.
                 </p>
                 <p className="text-yellow-700 leading-relaxed mt-2">
                   <strong>Data Source:</strong> Real-time data from Supabase database aggregating all corruption reports. 

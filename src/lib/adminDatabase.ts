@@ -57,6 +57,12 @@ export class AdminDatabaseService {
     return session?.access_token || null;
   }
 
+  // Check if current user is admin
+  private static async isCurrentUserAdmin(): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.email?.endsWith('@corruptionwatchdog.in') || false;
+  }
+
   // Get all users with their report counts
   static async getAllUsers(filters?: {
     search?: string;
@@ -184,12 +190,29 @@ export class AdminDatabaseService {
   // Update report status (admin only)
   static async updateReportStatus(reportId: string, status: string): Promise<{ error: any }> {
     try {
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { error: new Error('Admin access required') };
+      }
+
+      console.log('Updating report status:', { reportId, status });
+
       const { error } = await supabase
         .from('corruption_reports')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ 
+          status, 
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', reportId);
 
-      return { error };
+      if (error) {
+        console.error('Supabase error updating report status:', error);
+        throw error;
+      }
+
+      console.log('Report status updated successfully');
+      return { error: null };
     } catch (error) {
       console.error('Error updating report status:', error);
       return { error };
@@ -199,15 +222,150 @@ export class AdminDatabaseService {
   // Delete report (admin only)
   static async deleteReport(reportId: string): Promise<{ error: any }> {
     try {
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { error: new Error('Admin access required') };
+      }
+
+      console.log('Deleting report:', reportId);
+
       const { error } = await supabase
         .from('corruption_reports')
         .delete()
         .eq('id', reportId);
 
-      return { error };
+      if (error) {
+        console.error('Supabase error deleting report:', error);
+        throw error;
+      }
+
+      console.log('Report deleted successfully');
+      return { error: null };
     } catch (error) {
       console.error('Error deleting report:', error);
       return { error };
+    }
+  }
+
+  // Bulk delete reports (admin only)
+  static async bulkDeleteReports(reportIds: string[]): Promise<{ 
+    success: number; 
+    failed: number; 
+    errors: string[];
+    error?: any;
+  }> {
+    try {
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: ['Admin access required'],
+          error: new Error('Admin access required')
+        };
+      }
+
+      console.log('Bulk deleting reports:', reportIds);
+
+      if (!reportIds || reportIds.length === 0) {
+        return { success: 0, failed: 0, errors: [] };
+      }
+
+      // Use Supabase's bulk delete with IN operator
+      const { error } = await supabase
+        .from('corruption_reports')
+        .delete()
+        .in('id', reportIds);
+
+      if (error) {
+        console.error('Supabase error bulk deleting reports:', error);
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: [error.message],
+          error 
+        };
+      }
+
+      console.log(`Successfully bulk deleted ${reportIds.length} reports`);
+      return { 
+        success: reportIds.length, 
+        failed: 0, 
+        errors: [] 
+      };
+
+    } catch (error) {
+      console.error('Error bulk deleting reports:', error);
+      return { 
+        success: 0, 
+        failed: reportIds.length, 
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        error 
+      };
+    }
+  }
+
+  // Bulk update report status (admin only)
+  static async bulkUpdateReportStatus(reportIds: string[], status: string): Promise<{ 
+    success: number; 
+    failed: number; 
+    errors: string[];
+    error?: any;
+  }> {
+    try {
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: ['Admin access required'],
+          error: new Error('Admin access required')
+        };
+      }
+
+      console.log('Bulk updating report status:', { reportIds, status });
+
+      if (!reportIds || reportIds.length === 0) {
+        return { success: 0, failed: 0, errors: [] };
+      }
+
+      // Use Supabase's bulk update with IN operator
+      const { error } = await supabase
+        .from('corruption_reports')
+        .update({ 
+          status, 
+          updated_at: new Date().toISOString() 
+        })
+        .in('id', reportIds);
+
+      if (error) {
+        console.error('Supabase error bulk updating reports:', error);
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: [error.message],
+          error 
+        };
+      }
+
+      console.log(`Successfully bulk updated ${reportIds.length} reports to ${status}`);
+      return { 
+        success: reportIds.length, 
+        failed: 0, 
+        errors: [] 
+      };
+
+    } catch (error) {
+      console.error('Error bulk updating reports:', error);
+      return { 
+        success: 0, 
+        failed: reportIds.length, 
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        error 
+      };
     }
   }
 

@@ -222,7 +222,14 @@ export default function CorruptPersonAutocomplete({
               : 'border-gray-200 focus:border-red-500 focus:bg-white hover:border-gray-300'
             }
           `}
+          // Disable browser autofill and autocomplete
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck="false"
+          data-form-type="other"
+          data-lpignore="true"
+          data-1p-ignore="true"
         />
         
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">

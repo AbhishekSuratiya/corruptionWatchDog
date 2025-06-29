@@ -9,6 +9,7 @@ import Directory from './pages/Directory';
 import HeatMap from './pages/HeatMap';
 import About from './pages/About';
 import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,6 +27,7 @@ function App() {
             <Route path="/heatmap" element={<HeatMap />} />
             <Route path="/about" element={<About />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
         <Footer />

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, Menu, X, AlertTriangle, LogIn, UserPlus } from 'lucide-react';
+import { Shield, Menu, X, AlertTriangle, LogIn, UserPlus, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useAdmin } from '../../hooks/useAdmin';
 import UserMenu from '../Auth/UserMenu';
 import AuthModal from '../Auth/AuthModal';
 import GradientButton from '../UI/GradientButton';
@@ -14,6 +15,7 @@ interface HeaderProps {
 export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
   const location = useLocation();
   const { user, loading } = useAuth();
+  const { isAdmin } = useAdmin();
   const [authModalOpen, setAuthModalOpen] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<'login' | 'signup'>('login');
 
@@ -24,6 +26,11 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
     { name: 'Heat Map', href: '/heatmap' },
     { name: 'About', href: '/about' }
   ];
+
+  // Add admin link for admin users
+  if (isAdmin) {
+    navigation.push({ name: 'Admin', href: '/admin' });
+  }
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -62,11 +69,16 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                   to={item.href}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 ${
                     isActive(item.href)
-                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25'
+                      ? item.href === '/admin'
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25'
+                        : 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25'
                       : 'text-gray-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm'
                   }`}
                 >
                   {item.name}
+                  {item.href === '/admin' && (
+                    <Settings className="w-3 h-3 ml-1 inline" />
+                  )}
                 </Link>
               ))}
             </nav>
@@ -117,13 +129,18 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                     key={item.name}
                     to={item.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
+                    className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center ${
                       isActive(item.href)
-                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                        ? item.href === '/admin'
+                          ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
+                          : 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
                         : 'text-gray-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm'
                     }`}
                   >
                     {item.name}
+                    {item.href === '/admin' && (
+                      <Settings className="w-4 h-4 ml-2" />
+                    )}
                   </Link>
                 ))}
                 

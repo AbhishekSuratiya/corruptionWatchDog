@@ -6,6 +6,7 @@ import FloatingCard from '../components/UI/FloatingCard';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 import { DatabaseService } from '../lib/database';
+import { FileStorageService } from '../lib/fileStorage';
 
 interface DefaulterProfile {
   corrupt_person_name: string;
@@ -38,50 +39,22 @@ interface DetailedReport {
 }
 
 interface EvidenceViewerProps {
+  fileUrl: string;
   filename: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
 // Evidence Viewer Modal Component
-function EvidenceViewer({ filename, isOpen, onClose }: EvidenceViewerProps) {
+function EvidenceViewer({ fileUrl, filename, isOpen, onClose }: EvidenceViewerProps) {
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   if (!isOpen) return null;
 
-  const getFileType = (filename: string) => {
-    const ext = filename.toLowerCase().split('.').pop();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext || '')) {
-      return 'image';
-    } else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(ext || '')) {
-      return 'video';
-    } else if (['pdf'].includes(ext || '')) {
-      return 'pdf';
-    } else if (['doc', 'docx', 'txt', 'rtf'].includes(ext || '')) {
-      return 'document';
-    } else {
-      return 'unknown';
-    }
-  };
-
-  const fileType = getFileType(filename);
-
-  // For demo purposes, we'll use placeholder URLs
-  // In production, these would be actual file URLs from your storage
-  const getFileUrl = (filename: string) => {
-    const fileType = getFileType(filename);
-    switch (fileType) {
-      case 'image':
-        return `https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=800&h=600&fit=crop&crop=center`;
-      case 'video':
-        return `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`;
-      case 'pdf':
-        return `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`;
-      default:
-        return '';
-    }
-  };
+  const fileType = FileStorageService.getFileType(filename);
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 300));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 25));
@@ -89,6 +62,16 @@ function EvidenceViewer({ filename, isOpen, onClose }: EvidenceViewerProps) {
   const handleReset = () => {
     setZoom(100);
     setRotation(0);
+  };
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+  };
+
+  const handleImageError = () => {
+    setIsLoading(false);
+    setHasError(true);
   };
 
   return (
@@ -117,7 +100,7 @@ function EvidenceViewer({ filename, isOpen, onClose }: EvidenceViewerProps) {
             
             {/* Controls */}
             <div className="flex items-center space-x-2">
-              {fileType === 'image' && (
+              {fileType === 'image' && !hasError && (
                 <>
                   <button
                     onClick={handleZoomOut}
@@ -151,7 +134,7 @@ function EvidenceViewer({ filename, isOpen, onClose }: EvidenceViewerProps) {
               )}
               
               <a
-                href={getFileUrl(filename)}
+                href={fileUrl}
                 download={filename}
                 className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                 title="Download"
@@ -172,39 +155,104 @@ function EvidenceViewer({ filename, isOpen, onClose }: EvidenceViewerProps) {
           {/* Content */}
           <div className="relative overflow-auto max-h-[calc(100vh-200px)]">
             {fileType === 'image' && (
-              <div className="flex items-center justify-center p-8 bg-gray-50">
-                <img
-                  src={getFileUrl(filename)}
-                  alt={filename}
-                  className="max-w-full max-h-full object-contain transition-all duration-300 shadow-lg rounded-lg"
-                  style={{
-                    transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-                    transformOrigin: 'center'
-                  }}
-                />
+              <div className="flex items-center justify-center p-8 bg-gray-50 min-h-[400px]">
+                {isLoading && (
+                  <div className="flex items-center space-x-2 text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span>Loading image...</span>
+                  </div>
+                )}
+                
+                {hasError && (
+                  <div className="text-center p-8">
+                    <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load Image</h3>
+                    <p className="text-gray-600 mb-4">The image file could not be displayed.</p>
+                    <a
+                      href={fileUrl}
+                      download={filename}
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download File</span>
+                    </a>
+                  </div>
+                )}
+
+                {!hasError && (
+                  <img
+                    src={fileUrl}
+                    alt={filename}
+                    className={`max-w-full max-h-full object-contain transition-all duration-300 shadow-lg rounded-lg ${
+                      isLoading ? 'opacity-0' : 'opacity-100'
+                    }`}
+                    style={{
+                      transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
+                      transformOrigin: 'center'
+                    }}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                  />
+                )}
               </div>
             )}
 
             {fileType === 'video' && (
               <div className="flex items-center justify-center p-8 bg-black">
                 <video
-                  src={getFileUrl(filename)}
+                  src={fileUrl}
                   controls
                   className="max-w-full max-h-full rounded-lg shadow-lg"
                   style={{ maxHeight: 'calc(100vh - 300px)' }}
+                  onError={() => setHasError(true)}
                 >
                   Your browser does not support the video tag.
                 </video>
+                
+                {hasError && (
+                  <div className="text-center p-8 text-white">
+                    <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Unable to Load Video</h3>
+                    <p className="text-gray-300 mb-4">The video file could not be played.</p>
+                    <a
+                      href={fileUrl}
+                      download={filename}
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download File</span>
+                    </a>
+                  </div>
+                )}
               </div>
             )}
 
             {fileType === 'pdf' && (
               <div className="h-full">
                 <iframe
-                  src={getFileUrl(filename)}
+                  src={fileUrl}
                   className="w-full h-full min-h-[600px]"
                   title={filename}
+                  onError={() => setHasError(true)}
                 />
+                
+                {hasError && (
+                  <div className="flex items-center justify-center p-16 bg-gray-50">
+                    <div className="text-center">
+                      <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Display PDF</h3>
+                      <p className="text-gray-600 mb-4">The PDF file could not be displayed in the browser.</p>
+                      <a
+                        href={fileUrl}
+                        download={filename}
+                        className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span>Download PDF</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -226,7 +274,7 @@ function EvidenceViewer({ filename, isOpen, onClose }: EvidenceViewerProps) {
                   </div>
                   <div className="mt-6">
                     <a
-                      href={getFileUrl(filename)}
+                      href={fileUrl}
                       download={filename}
                       className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
@@ -277,9 +325,11 @@ export default function Directory() {
   // Evidence viewer state
   const [evidenceViewer, setEvidenceViewer] = useState<{
     isOpen: boolean;
+    fileUrl: string;
     filename: string;
   }>({
     isOpen: false,
+    fileUrl: '',
     filename: ''
   });
 
@@ -287,7 +337,7 @@ export default function Directory() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && evidenceViewer.isOpen) {
-        setEvidenceViewer({ isOpen: false, filename: '' });
+        setEvidenceViewer({ isOpen: false, fileUrl: '', filename: '' });
       }
     };
 
@@ -401,10 +451,11 @@ export default function Directory() {
     setDetailsError(null);
   };
 
-  const handleEvidenceClick = (filename: string) => {
-    console.log('Opening evidence viewer for:', filename);
+  const handleEvidenceClick = (fileUrl: string, filename: string) => {
+    console.log('Opening evidence viewer for:', filename, 'URL:', fileUrl);
     setEvidenceViewer({
       isOpen: true,
+      fileUrl,
       filename
     });
   };
@@ -412,6 +463,7 @@ export default function Directory() {
   const handleCloseEvidenceViewer = () => {
     setEvidenceViewer({
       isOpen: false,
+      fileUrl: '',
       filename: ''
     });
   };
@@ -467,13 +519,26 @@ export default function Directory() {
   };
 
   const getEvidenceIcon = (filename: string) => {
-    const ext = filename.toLowerCase().split('.').pop();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
-      return <Image className="h-4 w-4" />;
-    } else if (['mp4', 'avi', 'mov', 'wmv'].includes(ext || '')) {
-      return <Video className="h-4 w-4" />;
-    } else {
-      return <FileText className="h-4 w-4" />;
+    const fileType = FileStorageService.getFileType(filename);
+    switch (fileType) {
+      case 'image':
+        return <Image className="h-4 w-4" />;
+      case 'video':
+        return <Video className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  // Extract filename from URL for display
+  const getFilenameFromUrl = (url: string): string => {
+    try {
+      const urlParts = url.split('/');
+      const filename = urlParts[urlParts.length - 1];
+      // Remove any query parameters
+      return filename.split('?')[0];
+    } catch {
+      return 'Evidence File';
     }
   };
 
@@ -508,7 +573,7 @@ export default function Directory() {
                 <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> {selectedDefaulter}</span>
               </h1>
               <p className="text-xl text-gray-600">
-                All corruption reports filed against this individual
+                All corruption reports filed against this individual with evidence files
               </p>
             </div>
           </div>
@@ -593,54 +658,56 @@ export default function Directory() {
                               Evidence Files ({report.evidence_files.length})
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {report.evidence_files.map((file, fileIndex) => (
-                                <div 
-                                  key={fileIndex} 
-                                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-blue-300"
-                                  onClick={() => handleEvidenceClick(file)}
-                                >
-                                  <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                                      {getEvidenceIcon(file)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors">
-                                        {file}
-                                      </p>
-                                      <p className="text-xs text-gray-500 group-hover:text-blue-600 transition-colors">
-                                        Click to view evidence
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <button 
-                                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                                        title="View Evidence"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEvidenceClick(file);
-                                        }}
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </button>
-                                      <button 
-                                        className="p-1 text-gray-400 hover:text-green-600 transition-colors"
-                                        title="Download"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          // Handle download
-                                        }}
-                                      >
-                                        <Download className="h-4 w-4" />
-                                      </button>
+                              {report.evidence_files.map((fileUrl, fileIndex) => {
+                                const filename = getFilenameFromUrl(fileUrl);
+                                return (
+                                  <div 
+                                    key={fileIndex} 
+                                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-blue-300"
+                                    onClick={() => handleEvidenceClick(fileUrl, filename)}
+                                  >
+                                    <div className="flex items-center space-x-3">
+                                      <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                                        {getEvidenceIcon(filename)}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                                          {filename}
+                                        </p>
+                                        <p className="text-xs text-gray-500 group-hover:text-blue-600 transition-colors">
+                                          Click to view evidence file
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center space-x-1">
+                                        <button 
+                                          className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                          title="View Evidence"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEvidenceClick(fileUrl, filename);
+                                          }}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </button>
+                                        <a
+                                          href={fileUrl}
+                                          download={filename}
+                                          className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                                          title="Download"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Download className="h-4 w-4" />
+                                        </a>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                               <div className="flex items-center space-x-2 text-sm text-blue-700">
                                 <Eye className="h-4 w-4" />
-                                <span>Click on any evidence file to view it in full screen</span>
+                                <span>Click on any evidence file to view it in full screen with zoom and download options</span>
                               </div>
                             </div>
                           </div>
@@ -794,6 +861,7 @@ export default function Directory() {
 
           {/* Evidence Viewer Modal */}
           <EvidenceViewer
+            fileUrl={evidenceViewer.fileUrl}
             filename={evidenceViewer.filename}
             isOpen={evidenceViewer.isOpen}
             onClose={handleCloseEvidenceViewer}

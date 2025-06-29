@@ -55,14 +55,16 @@ export class AdminDatabaseService {
   private static async isCurrentUserAdmin(): Promise<boolean> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      return user?.email?.endsWith('@corruptionwatchdog.in') || false;
+      const isAdmin = user?.email?.endsWith('@corruptionwatchdog.in') || false;
+      console.log('Admin check:', { email: user?.email, isAdmin });
+      return isAdmin;
     } catch (error) {
       console.error('Error checking admin status:', error);
       return false;
     }
   }
 
-  // Get all users with their report counts (simplified version)
+  // Get all users with their report counts
   static async getAllUsers(filters?: {
     search?: string;
     hasReports?: boolean;
@@ -78,98 +80,96 @@ export class AdminDatabaseService {
 
       console.log('Fetching users with filters:', filters);
 
-      // For now, we'll create mock admin users since we can't access auth.users directly
-      // In a real implementation, you'd need to use Supabase Admin API or edge functions
-      const mockUsers: AdminUser[] = [
-        {
-          id: '1',
-          email: 'admin@corruptionwatchdog.in',
-          created_at: new Date().toISOString(),
-          email_confirmed_at: new Date().toISOString(),
-          last_sign_in_at: new Date().toISOString(),
-          user_metadata: {
-            full_name: 'Admin User',
-            phone: '+1234567890',
-            location: 'Admin Location'
-          },
-          report_count: 0
-        }
-      ];
-
-      // Get report counts for users who have submitted reports
-      const { data: reportCounts, error: reportError } = await supabase
+      // Get unique users from reports (both anonymous and non-anonymous)
+      const { data: allReports, error: reportsError } = await supabase
         .from('corruption_reports')
-        .select('reporter_email')
-        .not('reporter_email', 'is', null);
+        .select('reporter_email, reporter_name, created_at, is_anonymous');
 
-      if (reportError) {
-        console.warn('Error fetching report counts:', reportError);
+      if (reportsError) {
+        console.error('Error fetching reports for users:', reportsError);
+        throw reportsError;
       }
 
-      // Count reports by email
+      // Create user map
+      const userMap = new Map<string, AdminUser>();
+      
+      // Add admin user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        userMap.set(currentUser.email!, {
+          id: currentUser.id,
+          email: currentUser.email!,
+          created_at: currentUser.created_at!,
+          email_confirmed_at: currentUser.email_confirmed_at,
+          last_sign_in_at: currentUser.last_sign_in_at,
+          user_metadata: currentUser.user_metadata || {},
+          report_count: 0
+        });
+      }
+
+      // Process reports to extract users
       const reportCountMap = new Map<string, number>();
-      if (reportCounts) {
-        reportCounts.forEach((report: any) => {
-          if (report.reporter_email) {
+      
+      if (allReports) {
+        allReports.forEach((report: any) => {
+          if (report.reporter_email && !report.is_anonymous) {
+            // Count reports
             const count = reportCountMap.get(report.reporter_email) || 0;
             reportCountMap.set(report.reporter_email, count + 1);
+            
+            // Add user if not exists
+            if (!userMap.has(report.reporter_email)) {
+              userMap.set(report.reporter_email, {
+                id: `user-${report.reporter_email}`,
+                email: report.reporter_email,
+                created_at: report.created_at,
+                email_confirmed_at: report.created_at,
+                last_sign_in_at: report.created_at,
+                user_metadata: {
+                  full_name: report.reporter_name || 'Unknown User',
+                  phone: '',
+                  location: ''
+                },
+                report_count: 0
+              });
+            }
           }
         });
       }
 
-      // Add users from reports (non-anonymous ones)
-      const { data: nonAnonReports, error: nonAnonError } = await supabase
-        .from('corruption_reports')
-        .select('reporter_email, reporter_name, created_at')
-        .eq('is_anonymous', false)
-        .not('reporter_email', 'is', null);
+      // Update report counts
+      userMap.forEach((user, email) => {
+        user.report_count = reportCountMap.get(email) || 0;
+      });
 
-      if (!nonAnonError && nonAnonReports) {
-        const userEmails = new Set<string>();
-        nonAnonReports.forEach((report: any) => {
-          if (report.reporter_email && !userEmails.has(report.reporter_email)) {
-            userEmails.add(report.reporter_email);
-            mockUsers.push({
-              id: `user-${report.reporter_email}`,
-              email: report.reporter_email,
-              created_at: report.created_at,
-              email_confirmed_at: report.created_at,
-              last_sign_in_at: report.created_at,
-              user_metadata: {
-                full_name: report.reporter_name || 'Unknown User',
-                phone: '',
-                location: ''
-              },
-              report_count: reportCountMap.get(report.reporter_email) || 0
-            });
-          }
-        });
-      }
+      let users = Array.from(userMap.values());
 
       // Apply filters
-      let filteredUsers = mockUsers;
-
       if (filters?.search) {
         const searchLower = filters.search.toLowerCase();
-        filteredUsers = filteredUsers.filter(user => 
+        users = users.filter(user => 
           user.email.toLowerCase().includes(searchLower) ||
-          user.user_metadata.full_name?.toLowerCase().includes(searchLower)
+          user.user_metadata.full_name?.toLowerCase().includes(searchLower) ||
+          user.id.toLowerCase().includes(searchLower)
         );
       }
 
       if (filters?.hasReports !== undefined) {
-        filteredUsers = filteredUsers.filter(user => 
+        users = users.filter(user => 
           filters.hasReports ? user.report_count > 0 : user.report_count === 0
         );
       }
 
+      // Sort by creation date (newest first)
+      users.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
       // Apply pagination
       const startIndex = filters?.offset || 0;
       const endIndex = startIndex + (filters?.limit || 50);
-      const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+      const paginatedUsers = users.slice(startIndex, endIndex);
 
-      console.log(`Returning ${paginatedUsers.length} users`);
-      return { data: paginatedUsers, error: null, count: filteredUsers.length };
+      console.log(`Returning ${paginatedUsers.length} users out of ${users.length} total`);
+      return { data: paginatedUsers, error: null, count: users.length };
 
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -255,7 +255,7 @@ export class AdminDatabaseService {
       // Get report statistics
       const { data: allReports, error: reportsError } = await supabase
         .from('corruption_reports')
-        .select('id, is_anonymous, status, created_at');
+        .select('id, is_anonymous, status, created_at, reporter_email');
 
       if (reportsError) {
         console.error('Error fetching reports for stats:', reportsError);
@@ -278,18 +278,15 @@ export class AdminDatabaseService {
         new Date(r.created_at) >= thisMonth
       ).length || 0;
 
-      // For users, we'll estimate based on non-anonymous reports
-      const { data: nonAnonReports, error: nonAnonError } = await supabase
-        .from('corruption_reports')
-        .select('reporter_email, created_at')
-        .eq('is_anonymous', false)
-        .not('reporter_email', 'is', null);
+      // Count unique users from non-anonymous reports
+      const uniqueUserEmails = new Set(
+        allReports?.filter((r: any) => !r.is_anonymous && r.reporter_email)
+          .map((r: any) => r.reporter_email) || []
+      );
+      const totalUsers = uniqueUserEmails.size + 1; // +1 for admin
 
-      const uniqueUsers = new Set(nonAnonReports?.map((r: any) => r.reporter_email) || []);
-      const totalUsers = uniqueUsers.size + 1; // +1 for admin
-
-      const usersThisMonth = nonAnonReports?.filter((r: any) => 
-        new Date(r.created_at) >= thisMonth
+      const usersThisMonth = allReports?.filter((r: any) => 
+        !r.is_anonymous && r.reporter_email && new Date(r.created_at) >= thisMonth
       ).length || 0;
 
       const stats: AdminStats = {
@@ -351,26 +348,51 @@ export class AdminDatabaseService {
       // Check if user is admin
       const isAdmin = await this.isCurrentUserAdmin();
       if (!isAdmin) {
+        console.error('Admin access denied for delete operation');
         return { error: new Error('Admin access required') };
       }
 
-      console.log('Deleting report:', reportId);
+      console.log('Attempting to delete report:', reportId);
 
-      const { error } = await supabase
+      // First verify the report exists
+      const { data: existingReport, error: fetchError } = await supabase
+        .from('corruption_reports')
+        .select('id')
+        .eq('id', reportId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching report to delete:', fetchError);
+        if (fetchError.code === 'PGRST116') {
+          return { error: new Error('Report not found') };
+        }
+        throw fetchError;
+      }
+
+      if (!existingReport) {
+        console.error('Report not found:', reportId);
+        return { error: new Error('Report not found') };
+      }
+
+      console.log('Report exists, proceeding with deletion...');
+
+      // Delete the report
+      const { error: deleteError } = await supabase
         .from('corruption_reports')
         .delete()
         .eq('id', reportId);
 
-      if (error) {
-        console.error('Supabase error deleting report:', error);
-        throw error;
+      if (deleteError) {
+        console.error('Supabase error deleting report:', deleteError);
+        throw deleteError;
       }
 
-      console.log('Report deleted successfully');
+      console.log('Report deleted successfully:', reportId);
       return { error: null };
+
     } catch (error) {
-      console.error('Error deleting report:', error);
-      return { error };
+      console.error('Error in deleteReport function:', error);
+      return { error: error instanceof Error ? error : new Error('Unknown error occurred') };
     }
   }
 
@@ -385,6 +407,7 @@ export class AdminDatabaseService {
       // Check if user is admin
       const isAdmin = await this.isCurrentUserAdmin();
       if (!isAdmin) {
+        console.error('Admin access denied for bulk delete operation');
         return { 
           success: 0, 
           failed: reportIds.length, 
@@ -393,42 +416,79 @@ export class AdminDatabaseService {
         };
       }
 
-      console.log('Bulk deleting reports:', reportIds);
+      console.log('Attempting to bulk delete reports:', reportIds);
 
       if (!reportIds || reportIds.length === 0) {
+        console.log('No report IDs provided for bulk delete');
         return { success: 0, failed: 0, errors: [] };
       }
 
-      // Use Supabase's bulk delete with IN operator
-      const { error } = await supabase
+      // First verify which reports exist
+      const { data: existingReports, error: fetchError } = await supabase
         .from('corruption_reports')
-        .delete()
+        .select('id')
         .in('id', reportIds);
 
-      if (error) {
-        console.error('Supabase error bulk deleting reports:', error);
+      if (fetchError) {
+        console.error('Error fetching reports for bulk delete:', fetchError);
         return { 
           success: 0, 
           failed: reportIds.length, 
-          errors: [error.message],
-          error 
+          errors: [fetchError.message],
+          error: fetchError 
         };
       }
 
-      console.log(`Successfully bulk deleted ${reportIds.length} reports`);
+      const existingIds = existingReports?.map(r => r.id) || [];
+      const nonExistentIds = reportIds.filter(id => !existingIds.includes(id));
+
+      console.log('Existing reports:', existingIds);
+      console.log('Non-existent reports:', nonExistentIds);
+
+      if (existingIds.length === 0) {
+        console.log('No reports found to delete');
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: ['No reports found to delete'] 
+        };
+      }
+
+      // Delete existing reports
+      const { error: deleteError } = await supabase
+        .from('corruption_reports')
+        .delete()
+        .in('id', existingIds);
+
+      if (deleteError) {
+        console.error('Supabase error bulk deleting reports:', deleteError);
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: [deleteError.message],
+          error: deleteError 
+        };
+      }
+
+      const successCount = existingIds.length;
+      const failedCount = nonExistentIds.length;
+      const errors = nonExistentIds.length > 0 ? [`${nonExistentIds.length} reports not found`] : [];
+
+      console.log(`Bulk delete completed: ${successCount} successful, ${failedCount} failed`);
+      
       return { 
-        success: reportIds.length, 
-        failed: 0, 
-        errors: [] 
+        success: successCount, 
+        failed: failedCount, 
+        errors 
       };
 
     } catch (error) {
-      console.error('Error bulk deleting reports:', error);
+      console.error('Error in bulkDeleteReports function:', error);
       return { 
         success: 0, 
         failed: reportIds.length, 
         errors: [error instanceof Error ? error.message : 'Unknown error'],
-        error 
+        error: error instanceof Error ? error : new Error('Unknown error')
       };
     }
   }
@@ -444,6 +504,7 @@ export class AdminDatabaseService {
       // Check if user is admin
       const isAdmin = await this.isCurrentUserAdmin();
       if (!isAdmin) {
+        console.error('Admin access denied for bulk status update');
         return { 
           success: 0, 
           failed: reportIds.length, 
@@ -452,96 +513,94 @@ export class AdminDatabaseService {
         };
       }
 
-      console.log('Bulk updating report status:', { reportIds, status });
+      console.log('Attempting to bulk update report status:', { reportIds, status });
 
       if (!reportIds || reportIds.length === 0) {
+        console.log('No report IDs provided for bulk update');
         return { success: 0, failed: 0, errors: [] };
       }
 
-      // Use Supabase's bulk update with IN operator
-      const { error } = await supabase
+      // Validate status
+      const validStatuses = ['pending', 'verified', 'disputed', 'resolved'];
+      if (!validStatuses.includes(status)) {
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: [`Invalid status: ${status}`],
+          error: new Error(`Invalid status: ${status}`)
+        };
+      }
+
+      // First verify which reports exist
+      const { data: existingReports, error: fetchError } = await supabase
+        .from('corruption_reports')
+        .select('id')
+        .in('id', reportIds);
+
+      if (fetchError) {
+        console.error('Error fetching reports for bulk update:', fetchError);
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: [fetchError.message],
+          error: fetchError 
+        };
+      }
+
+      const existingIds = existingReports?.map(r => r.id) || [];
+      const nonExistentIds = reportIds.filter(id => !existingIds.includes(id));
+
+      console.log('Existing reports for update:', existingIds);
+      console.log('Non-existent reports:', nonExistentIds);
+
+      if (existingIds.length === 0) {
+        console.log('No reports found to update');
+        return { 
+          success: 0, 
+          failed: reportIds.length, 
+          errors: ['No reports found to update'] 
+        };
+      }
+
+      // Update existing reports
+      const { error: updateError } = await supabase
         .from('corruption_reports')
         .update({ 
           status, 
           updated_at: new Date().toISOString() 
         })
-        .in('id', reportIds);
+        .in('id', existingIds);
 
-      if (error) {
-        console.error('Supabase error bulk updating reports:', error);
+      if (updateError) {
+        console.error('Supabase error bulk updating reports:', updateError);
         return { 
           success: 0, 
           failed: reportIds.length, 
-          errors: [error.message],
-          error 
+          errors: [updateError.message],
+          error: updateError 
         };
       }
 
-      console.log(`Successfully bulk updated ${reportIds.length} reports to ${status}`);
+      const successCount = existingIds.length;
+      const failedCount = nonExistentIds.length;
+      const errors = nonExistentIds.length > 0 ? [`${nonExistentIds.length} reports not found`] : [];
+
+      console.log(`Bulk status update completed: ${successCount} successful, ${failedCount} failed`);
+      
       return { 
-        success: reportIds.length, 
-        failed: 0, 
-        errors: [] 
+        success: successCount, 
+        failed: failedCount, 
+        errors 
       };
 
     } catch (error) {
-      console.error('Error bulk updating reports:', error);
+      console.error('Error in bulkUpdateReportStatus function:', error);
       return { 
         success: 0, 
         failed: reportIds.length, 
         errors: [error instanceof Error ? error.message : 'Unknown error'],
-        error 
+        error: error instanceof Error ? error : new Error('Unknown error')
       };
-    }
-  }
-
-  // Delete user (admin only) - Simplified version
-  static async deleteUser(userId: string): Promise<{ error: any }> {
-    try {
-      // Check if user is admin
-      const isAdmin = await this.isCurrentUserAdmin();
-      if (!isAdmin) {
-        return { error: new Error('Admin access required') };
-      }
-
-      console.log('Delete user requested for:', userId);
-      
-      // For now, we'll just return success since we can't actually delete auth users
-      // In a real implementation, you'd need Supabase Admin API or edge functions
-      return { error: new Error('User deletion requires server-side implementation') };
-
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      return { error };
-    }
-  }
-
-  // Reset user password (admin only) - Simplified version
-  static async resetUserPassword(userEmail: string): Promise<{ error: any }> {
-    try {
-      // Check if user is admin
-      const isAdmin = await this.isCurrentUserAdmin();
-      if (!isAdmin) {
-        return { error: new Error('Admin access required') };
-      }
-
-      console.log('Password reset requested for:', userEmail);
-
-      // Use the regular password reset function
-      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (error) {
-        console.error('Error sending password reset:', error);
-        throw error;
-      }
-
-      return { error: null };
-
-    } catch (error) {
-      console.error('Error resetting user password:', error);
-      return { error };
     }
   }
 
@@ -554,21 +613,30 @@ export class AdminDatabaseService {
         return { data: null, error: new Error('Admin access required') };
       }
 
+      console.log('Fetching reports for user:', userEmail);
+
       const { data, error } = await supabase
         .from('corruption_reports')
         .select('*')
         .eq('reporter_email', userEmail)
         .order('created_at', { ascending: false });
 
-      return { data: data as AdminReport[], error };
+      if (error) {
+        console.error('Error fetching user reports:', error);
+        throw error;
+      }
+
+      console.log(`Found ${data?.length || 0} reports for user ${userEmail}`);
+      return { data: data as AdminReport[], error: null };
+
     } catch (error) {
-      console.error('Error fetching user reports:', error);
+      console.error('Error in getReportsByUser:', error);
       return { data: null, error };
     }
   }
 
-  // Ban/Unban user (admin only) - Simplified version
-  static async toggleUserBan(userId: string, banned: boolean): Promise<{ error: any }> {
+  // Reset user password (admin only)
+  static async resetUserPassword(userEmail: string): Promise<{ error: any }> {
     try {
       // Check if user is admin
       const isAdmin = await this.isCurrentUserAdmin();
@@ -576,36 +644,37 @@ export class AdminDatabaseService {
         return { error: new Error('Admin access required') };
       }
 
-      console.log('Ban toggle requested for:', userId, banned);
-      
-      // For now, we'll just return success since we can't actually ban auth users
-      // In a real implementation, you'd need Supabase Admin API or edge functions
-      return { error: new Error('User ban/unban requires server-side implementation') };
+      console.log('Sending password reset for:', userEmail);
+
+      // Use the regular password reset function
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        console.error('Error sending password reset:', error);
+        throw error;
+      }
+
+      console.log('Password reset email sent successfully');
+      return { error: null };
 
     } catch (error) {
-      console.error('Error toggling user ban:', error);
+      console.error('Error in resetUserPassword:', error);
       return { error };
     }
   }
 
-  // Update user metadata (admin only) - Simplified version
+  // Placeholder methods for user management (require server-side implementation)
+  static async deleteUser(userId: string): Promise<{ error: any }> {
+    return { error: new Error('User deletion requires server-side implementation with Supabase Admin API') };
+  }
+
+  static async toggleUserBan(userId: string, banned: boolean): Promise<{ error: any }> {
+    return { error: new Error('User ban/unban requires server-side implementation with Supabase Admin API') };
+  }
+
   static async updateUserMetadata(userId: string, metadata: any): Promise<{ error: any }> {
-    try {
-      // Check if user is admin
-      const isAdmin = await this.isCurrentUserAdmin();
-      if (!isAdmin) {
-        return { error: new Error('Admin access required') };
-      }
-
-      console.log('User metadata update requested for:', userId, metadata);
-      
-      // For now, we'll just return success since we can't actually update auth users
-      // In a real implementation, you'd need Supabase Admin API or edge functions
-      return { error: new Error('User metadata update requires server-side implementation') };
-
-    } catch (error) {
-      console.error('Error updating user metadata:', error);
-      return { error };
-    }
+    return { error: new Error('User metadata update requires server-side implementation with Supabase Admin API') };
   }
 }

@@ -44,30 +44,46 @@ export default function UserMenu({ user }: UserMenuProps) {
       {/* User Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 p-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 group"
+        className="flex items-center space-x-3 p-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 group max-w-xs"
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center text-black font-bold text-sm shadow-lg">
+        {/* Avatar - Fixed size to prevent shrinking */}
+        <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center text-black font-bold text-sm shadow-lg flex-shrink-0">
           {getUserInitials()}
         </div>
-        <div className="hidden md:block text-left">
-          <div className="text-sm font-medium">{getUserDisplayName()}</div>
-          <div className="text-xs text-white/70">{user?.email}</div>
+        
+        {/* User Info - Allow text to wrap and truncate */}
+        <div className="hidden md:block text-left min-w-0 flex-1">
+          <div className="text-sm font-medium truncate max-w-[150px]">
+            {getUserDisplayName()}
+          </div>
+          <div className="text-xs text-white/70 truncate max-w-[150px]">
+            {user?.email}
+          </div>
         </div>
-        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        
+        {/* Chevron - Fixed size */}
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
-          {/* User Info */}
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
+          {/* User Info - Better layout for long emails */}
           <div className="px-4 py-3 border-b border-gray-100">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
+            <div className="flex items-start space-x-3">
+              {/* Avatar - Fixed size */}
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg flex-shrink-0">
                 {getUserInitials()}
               </div>
-              <div>
-                <div className="font-semibold text-gray-900">{getUserDisplayName()}</div>
-                <div className="text-sm text-gray-500">{user?.email}</div>
+              
+              {/* User details - Allow proper text wrapping */}
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-gray-900 break-words">
+                  {getUserDisplayName()}
+                </div>
+                <div className="text-sm text-gray-500 break-all leading-relaxed">
+                  {user?.email}
+                </div>
               </div>
             </div>
           </div>
@@ -78,7 +94,7 @@ export default function UserMenu({ user }: UserMenuProps) {
               href="/profile"
               className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <User className="h-4 w-4 text-gray-500" />
+              <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
               <span>Profile Settings</span>
             </a>
             
@@ -86,7 +102,7 @@ export default function UserMenu({ user }: UserMenuProps) {
               href="/my-reports"
               className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <FileText className="h-4 w-4 text-gray-500" />
+              <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
               <span>My Reports</span>
             </a>
             
@@ -94,7 +110,7 @@ export default function UserMenu({ user }: UserMenuProps) {
               href="/settings"
               className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <Settings className="h-4 w-4 text-gray-500" />
+              <Settings className="h-4 w-4 text-gray-500 flex-shrink-0" />
               <span>Account Settings</span>
             </a>
             
@@ -102,7 +118,7 @@ export default function UserMenu({ user }: UserMenuProps) {
               href="/privacy"
               className="flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <Shield className="h-4 w-4 text-gray-500" />
+              <Shield className="h-4 w-4 text-gray-500 flex-shrink-0" />
               <span>Privacy & Security</span>
             </a>
           </div>
@@ -113,7 +129,7 @@ export default function UserMenu({ user }: UserMenuProps) {
               onClick={handleSignOut}
               className="flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors w-full text-left"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 flex-shrink-0" />
               <span>Sign Out</span>
             </button>
           </div>

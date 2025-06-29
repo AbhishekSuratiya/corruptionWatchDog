@@ -51,19 +51,18 @@ export interface AdminStats {
 }
 
 export class AdminDatabaseService {
-  // Get current user's session token
-  private static async getAuthToken(): Promise<string | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
-  }
-
   // Check if current user is admin
   private static async isCurrentUserAdmin(): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user?.email?.endsWith('@corruptionwatchdog.in') || false;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user?.email?.endsWith('@corruptionwatchdog.in') || false;
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+    }
   }
 
-  // Get all users with their report counts
+  // Get all users with their report counts (simplified version)
   static async getAllUsers(filters?: {
     search?: string;
     hasReports?: boolean;
@@ -71,29 +70,106 @@ export class AdminDatabaseService {
     offset?: number;
   }): Promise<{ data: AdminUser[] | null; error: any; count?: number }> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        return { data: null, error: new Error('Not authenticated') };
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { data: null, error: new Error('Admin access required') };
       }
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(filters || {})
-      });
+      console.log('Fetching users with filters:', filters);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+      // For now, we'll create mock admin users since we can't access auth.users directly
+      // In a real implementation, you'd need to use Supabase Admin API or edge functions
+      const mockUsers: AdminUser[] = [
+        {
+          id: '1',
+          email: 'admin@corruptionwatchdog.in',
+          created_at: new Date().toISOString(),
+          email_confirmed_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+          user_metadata: {
+            full_name: 'Admin User',
+            phone: '+1234567890',
+            location: 'Admin Location'
+          },
+          report_count: 0
+        }
+      ];
+
+      // Get report counts for users who have submitted reports
+      const { data: reportCounts, error: reportError } = await supabase
+        .from('corruption_reports')
+        .select('reporter_email')
+        .not('reporter_email', 'is', null);
+
+      if (reportError) {
+        console.warn('Error fetching report counts:', reportError);
       }
 
-      const result = await response.json();
-      return { data: result.data, error: null, count: result.count };
+      // Count reports by email
+      const reportCountMap = new Map<string, number>();
+      if (reportCounts) {
+        reportCounts.forEach((report: any) => {
+          if (report.reporter_email) {
+            const count = reportCountMap.get(report.reporter_email) || 0;
+            reportCountMap.set(report.reporter_email, count + 1);
+          }
+        });
+      }
+
+      // Add users from reports (non-anonymous ones)
+      const { data: nonAnonReports, error: nonAnonError } = await supabase
+        .from('corruption_reports')
+        .select('reporter_email, reporter_name, created_at')
+        .eq('is_anonymous', false)
+        .not('reporter_email', 'is', null);
+
+      if (!nonAnonError && nonAnonReports) {
+        const userEmails = new Set<string>();
+        nonAnonReports.forEach((report: any) => {
+          if (report.reporter_email && !userEmails.has(report.reporter_email)) {
+            userEmails.add(report.reporter_email);
+            mockUsers.push({
+              id: `user-${report.reporter_email}`,
+              email: report.reporter_email,
+              created_at: report.created_at,
+              email_confirmed_at: report.created_at,
+              last_sign_in_at: report.created_at,
+              user_metadata: {
+                full_name: report.reporter_name || 'Unknown User',
+                phone: '',
+                location: ''
+              },
+              report_count: reportCountMap.get(report.reporter_email) || 0
+            });
+          }
+        });
+      }
+
+      // Apply filters
+      let filteredUsers = mockUsers;
+
+      if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredUsers = filteredUsers.filter(user => 
+          user.email.toLowerCase().includes(searchLower) ||
+          user.user_metadata.full_name?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      if (filters?.hasReports !== undefined) {
+        filteredUsers = filteredUsers.filter(user => 
+          filters.hasReports ? user.report_count > 0 : user.report_count === 0
+        );
+      }
+
+      // Apply pagination
+      const startIndex = filters?.offset || 0;
+      const endIndex = startIndex + (filters?.limit || 50);
+      const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+      console.log(`Returning ${paginatedUsers.length} users`);
+      return { data: paginatedUsers, error: null, count: filteredUsers.length };
 
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -111,6 +187,14 @@ export class AdminDatabaseService {
     offset?: number;
   }): Promise<{ data: AdminReport[] | null; error: any; count?: number }> {
     try {
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { data: null, error: new Error('Admin access required') };
+      }
+
+      console.log('Fetching reports with filters:', filters);
+
       let query = supabase
         .from('corruption_reports')
         .select('*', { count: 'exact' })
@@ -144,9 +228,11 @@ export class AdminDatabaseService {
       const { data, error, count } = await query;
 
       if (error) {
+        console.error('Supabase error fetching reports:', error);
         throw error;
       }
 
+      console.log(`Fetched ${data?.length || 0} reports`);
       return { data: data as AdminReport[], error: null, count: count || 0 };
 
     } catch (error) {
@@ -158,28 +244,68 @@ export class AdminDatabaseService {
   // Get admin dashboard statistics
   static async getAdminStats(): Promise<{ data: AdminStats | null; error: any }> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        return { data: null, error: new Error('Not authenticated') };
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { data: null, error: new Error('Admin access required') };
       }
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-stats`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
+      console.log('Fetching admin stats...');
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+      // Get report statistics
+      const { data: allReports, error: reportsError } = await supabase
+        .from('corruption_reports')
+        .select('id, is_anonymous, status, created_at');
+
+      if (reportsError) {
+        console.error('Error fetching reports for stats:', reportsError);
+        throw reportsError;
       }
 
-      const result = await response.json();
-      return { data: result.data, error: null };
+      const totalReports = allReports?.length || 0;
+      const anonymousReports = allReports?.filter((r: any) => r.is_anonymous).length || 0;
+      const verifiedReports = allReports?.filter((r: any) => r.status === 'verified').length || 0;
+      const pendingReports = allReports?.filter((r: any) => r.status === 'pending').length || 0;
+      const resolvedReports = allReports?.filter((r: any) => r.status === 'resolved').length || 0;
+      const disputedReports = allReports?.filter((r: any) => r.status === 'disputed').length || 0;
+
+      // Get this month's statistics
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      thisMonth.setHours(0, 0, 0, 0);
+
+      const reportsThisMonth = allReports?.filter((r: any) => 
+        new Date(r.created_at) >= thisMonth
+      ).length || 0;
+
+      // For users, we'll estimate based on non-anonymous reports
+      const { data: nonAnonReports, error: nonAnonError } = await supabase
+        .from('corruption_reports')
+        .select('reporter_email, created_at')
+        .eq('is_anonymous', false)
+        .not('reporter_email', 'is', null);
+
+      const uniqueUsers = new Set(nonAnonReports?.map((r: any) => r.reporter_email) || []);
+      const totalUsers = uniqueUsers.size + 1; // +1 for admin
+
+      const usersThisMonth = nonAnonReports?.filter((r: any) => 
+        new Date(r.created_at) >= thisMonth
+      ).length || 0;
+
+      const stats: AdminStats = {
+        totalUsers,
+        totalReports,
+        anonymousReports,
+        verifiedReports,
+        pendingReports,
+        resolvedReports,
+        disputedReports,
+        reportsThisMonth,
+        usersThisMonth
+      };
+
+      console.log('Admin stats:', stats);
+      return { data: stats, error: null };
 
     } catch (error) {
       console.error('Error fetching admin stats:', error);
@@ -369,31 +495,20 @@ export class AdminDatabaseService {
     }
   }
 
-  // Delete user (admin only)
+  // Delete user (admin only) - Simplified version
   static async deleteUser(userId: string): Promise<{ error: any }> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        return { error: new Error('Not authenticated') };
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { error: new Error('Admin access required') };
       }
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`;
+      console.log('Delete user requested for:', userId);
       
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      return { error: null };
+      // For now, we'll just return success since we can't actually delete auth users
+      // In a real implementation, you'd need Supabase Admin API or edge functions
+      return { error: new Error('User deletion requires server-side implementation') };
 
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -401,28 +516,25 @@ export class AdminDatabaseService {
     }
   }
 
-  // Reset user password (admin only)
+  // Reset user password (admin only) - Simplified version
   static async resetUserPassword(userEmail: string): Promise<{ error: any }> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        return { error: new Error('Not authenticated') };
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { error: new Error('Admin access required') };
       }
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-password`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userEmail })
+      console.log('Password reset requested for:', userEmail);
+
+      // Use the regular password reset function
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+      if (error) {
+        console.error('Error sending password reset:', error);
+        throw error;
       }
 
       return { error: null };
@@ -436,6 +548,12 @@ export class AdminDatabaseService {
   // Get reports by user email
   static async getReportsByUser(userEmail: string): Promise<{ data: AdminReport[] | null; error: any }> {
     try {
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { data: null, error: new Error('Admin access required') };
+      }
+
       const { data, error } = await supabase
         .from('corruption_reports')
         .select('*')
@@ -449,31 +567,20 @@ export class AdminDatabaseService {
     }
   }
 
-  // Ban/Unban user (admin only)
+  // Ban/Unban user (admin only) - Simplified version
   static async toggleUserBan(userId: string, banned: boolean): Promise<{ error: any }> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        return { error: new Error('Not authenticated') };
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { error: new Error('Admin access required') };
       }
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-ban-user`;
+      console.log('Ban toggle requested for:', userId, banned);
       
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, banned })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      return { error: null };
+      // For now, we'll just return success since we can't actually ban auth users
+      // In a real implementation, you'd need Supabase Admin API or edge functions
+      return { error: new Error('User ban/unban requires server-side implementation') };
 
     } catch (error) {
       console.error('Error toggling user ban:', error);
@@ -481,31 +588,20 @@ export class AdminDatabaseService {
     }
   }
 
-  // Update user metadata (admin only)
+  // Update user metadata (admin only) - Simplified version
   static async updateUserMetadata(userId: string, metadata: any): Promise<{ error: any }> {
     try {
-      const token = await this.getAuthToken();
-      if (!token) {
-        return { error: new Error('Not authenticated') };
+      // Check if user is admin
+      const isAdmin = await this.isCurrentUserAdmin();
+      if (!isAdmin) {
+        return { error: new Error('Admin access required') };
       }
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`;
+      console.log('User metadata update requested for:', userId, metadata);
       
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, metadata })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
-      }
-
-      return { error: null };
+      // For now, we'll just return success since we can't actually update auth users
+      // In a real implementation, you'd need Supabase Admin API or edge functions
+      return { error: new Error('User metadata update requires server-side implementation') };
 
     } catch (error) {
       console.error('Error updating user metadata:', error);

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Shield, Upload, AlertCircle, CheckCircle, Loader2, User, Mail } from 'lucide-react';
+import { Shield, Upload, AlertCircle, CheckCircle, Loader2, User, Mail, X, FileText, Image, Video } from 'lucide-react';
 import Button from '../components/UI/Button';
 import LocationAutocomplete from '../components/UI/LocationAutocomplete';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 import { DatabaseService } from '../lib/database';
+import { FileStorageService, UploadedFile } from '../lib/fileStorage';
 import { useAuth } from '../hooks/useAuth';
 
 interface ReportFormData {
@@ -27,6 +28,9 @@ export default function ReportForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   
   const { 
     register, 
@@ -54,6 +58,11 @@ export default function ReportForm() {
   
   const isAnonymous = watch('is_anonymous');
   const areaRegion = watch('area_region');
+
+  // Initialize file storage on component mount
+  useEffect(() => {
+    FileStorageService.initializeBucket();
+  }, []);
 
   // Auto-fill user details when user is logged in
   useEffect(() => {
@@ -101,6 +110,25 @@ export default function ReportForm() {
     setSubmitError(null);
     
     try {
+      // Upload files first if any
+      let evidenceUrls: string[] = [];
+      
+      if (files.length > 0) {
+        setIsUploading(true);
+        console.log('Uploading files:', files.map(f => f.name));
+        
+        try {
+          const uploadedFiles = await FileStorageService.uploadFiles(files);
+          evidenceUrls = uploadedFiles.map(file => file.url);
+          console.log('Files uploaded successfully:', evidenceUrls);
+        } catch (uploadError) {
+          console.error('Error uploading files:', uploadError);
+          throw new Error('Failed to upload evidence files. Please try again.');
+        } finally {
+          setIsUploading(false);
+        }
+      }
+
       // Prepare data for database
       const reportData = {
         corrupt_person_name: data.corrupt_person_name.trim(),
@@ -114,8 +142,10 @@ export default function ReportForm() {
         is_anonymous: data.is_anonymous,
         reporter_name: data.is_anonymous ? undefined : data.reporter_name?.trim(),
         reporter_email: data.is_anonymous ? undefined : data.reporter_email?.trim(),
-        evidence_files: files.map(file => file.name) // In production, upload files first
+        evidence_files: evidenceUrls // Store actual file URLs
       };
+
+      console.log('Submitting report with evidence URLs:', evidenceUrls);
 
       // Save to database
       const { data: savedReport, error } = await DatabaseService.createReport(reportData);
@@ -129,22 +159,61 @@ export default function ReportForm() {
       setIsSubmitted(true);
       reset();
       setFiles([]);
+      setUploadedFiles([]);
     } catch (error) {
       console.error('Error submitting report:', error);
       setSubmitError(error instanceof Error ? error.message : 'Failed to submit report. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      const selectedFiles = Array.from(e.target.files);
+      
+      // Validate files
+      const validFiles: File[] = [];
+      const errors: string[] = [];
+      
+      selectedFiles.forEach(file => {
+        const validation = FileStorageService.validateFile(file);
+        if (validation.isValid) {
+          validFiles.push(file);
+        } else {
+          errors.push(validation.error!);
+        }
+      });
+      
+      if (errors.length > 0) {
+        setSubmitError(errors.join('\n'));
+        return;
+      }
+      
+      setFiles(validFiles);
+      setSubmitError(null);
     }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleLocationChange = (value: string) => {
     setValue('area_region', value, { shouldValidate: true });
+  };
+
+  const getFileIcon = (file: File) => {
+    const type = FileStorageService.getFileType(file.name);
+    switch (type) {
+      case 'image':
+        return <Image className="h-4 w-4 text-blue-600" />;
+      case 'video':
+        return <Video className="h-4 w-4 text-purple-600" />;
+      default:
+        return <FileText className="h-4 w-4 text-gray-600" />;
+    }
   };
 
   if (isSubmitted) {
@@ -162,8 +231,22 @@ export default function ReportForm() {
             </h2>
             <p className="text-gray-600 mb-6">
               Thank you for your courage in reporting corruption. Your report has been saved to our database 
-              and will be reviewed by our team. Together, we can build a more transparent society.
+              {files.length > 0 && ' along with your evidence files'} and will be reviewed by our team. 
+              Together, we can build a more transparent society.
             </p>
+            {uploadedFiles.length > 0 && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2">Evidence Files Uploaded:</h3>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  {uploadedFiles.map((file, index) => (
+                    <li key={index} className="flex items-center space-x-2">
+                      {getFileIcon({ name: file.name } as File)}
+                      <span>{file.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="space-y-4">
               <Button onClick={() => setIsSubmitted(false)} className="w-full">
                 Submit Another Report
@@ -222,7 +305,7 @@ export default function ReportForm() {
           <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <p className="text-red-800">{submitError}</p>
+              <p className="text-red-800 whitespace-pre-line">{submitError}</p>
             </div>
           </div>
         )}
@@ -501,7 +584,7 @@ export default function ReportForm() {
             {/* Evidence Upload */}
             <div className="space-y-6">
               <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                Evidence (Optional)
+                Evidence Files (Optional)
               </h2>
               
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-400 transition-colors">
@@ -515,26 +598,57 @@ export default function ReportForm() {
                       id="evidence"
                       type="file"
                       multiple
-                      accept="image/*,video/*,.pdf,.doc,.docx"
+                      accept="image/*,video/*,.pdf,.doc,.docx,.txt"
                       onChange={handleFileChange}
                       className="hidden"
                     />
                   </label>
                   <p className="text-sm text-gray-500">
-                    PNG, JPG, MP4, PDF up to 10MB each
+                    PNG, JPG, MP4, PDF, DOC up to 10MB each
                   </p>
                 </div>
+                
+                {/* Selected Files Display */}
                 {files.length > 0 && (
-                  <div className="mt-4 text-left">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Selected files:</p>
-                    <ul className="text-sm text-gray-600 space-y-1">
+                  <div className="mt-6 space-y-3">
+                    <p className="text-sm font-medium text-gray-700">Selected files:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {files.map((file, index) => (
-                        <li key={index} className="flex items-center space-x-2">
-                          <span>📎</span>
-                          <span>{file.name}</span>
-                        </li>
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center space-x-3">
+                            {getFileIcon(file)}
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
+                            title="Remove file"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Progress */}
+                {isUploading && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                      <span className="text-sm text-blue-700 font-medium">
+                        Uploading evidence files...
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -639,12 +753,17 @@ export default function ReportForm() {
             <div className="pt-6 border-t border-gray-200">
               <Button
                 type="submit"
-                isLoading={isSubmitting}
+                isLoading={isSubmitting || isUploading}
                 className="w-full py-4 text-lg font-semibold"
                 size="lg"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isUploading}
               >
-                {isSubmitting ? (
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Uploading Evidence Files...
+                  </>
+                ) : isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Saving Report to Database...
@@ -655,7 +774,7 @@ export default function ReportForm() {
               </Button>
               <p className="text-sm text-gray-500 text-center mt-4">
                 By submitting this report, you agree to our terms of service and privacy policy.
-                All reports are treated with strict confidentiality and saved securely.
+                All reports and evidence files are stored securely and treated with strict confidentiality.
               </p>
               
               {/* Show validation errors summary */}

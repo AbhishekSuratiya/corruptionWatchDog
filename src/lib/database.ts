@@ -13,7 +13,7 @@ export interface CreateReportData {
   is_anonymous: boolean;
   reporter_name?: string;
   reporter_email?: string;
-  evidence_files?: string[];
+  evidence_files?: string[]; // Now stores actual file URLs
 }
 
 export interface HeatMapData {
@@ -43,7 +43,7 @@ export class DatabaseService {
           is_anonymous: data.is_anonymous,
           reporter_name: data.is_anonymous ? null : data.reporter_name,
           reporter_email: data.is_anonymous ? null : data.reporter_email,
-          evidence_files: data.evidence_files || []
+          evidence_files: data.evidence_files || [] // Store actual file URLs
         }])
         .select()
         .single();

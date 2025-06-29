@@ -226,6 +226,11 @@ export default function Admin() {
     }
   };
 
+  const handleViewUser = (userId: string, userEmail: string) => {
+    // Create a simple user profile view instead of opening a new tab
+    alert(`User Profile:\n\nID: ${userId}\nEmail: ${userEmail}\n\nNote: Full user profile page coming soon!`);
+  };
+
   // Access control
   if (adminLoading) {
     return (
@@ -271,23 +276,23 @@ export default function Admin() {
   const totalPages = Math.ceil((activeTab === 'users' ? usersCount : reportsCount) / itemsPerPage);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-6 lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-in-up">
-          <div className="flex justify-center mb-8">
+        {/* Header - Responsive */}
+        <div className="text-center mb-8 lg:mb-12 animate-fade-in-up">
+          <div className="flex justify-center mb-6 lg:mb-8">
             <div className="relative group">
               <div className="absolute inset-0 bg-purple-500 rounded-full blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300 animate-pulse"></div>
-              <div className="relative p-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl">
-                <Shield className="h-12 w-12 text-white" />
+              <div className="relative p-4 lg:p-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl">
+                <Shield className="h-8 w-8 lg:h-12 lg:w-12 text-white" />
               </div>
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-4 lg:mb-6">
             Admin 
             <span className="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent"> Dashboard</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Comprehensive admin panel for managing users, reports, and platform oversight.
           </p>
           <p className="text-sm text-gray-500 mt-2">
@@ -295,8 +300,8 @@ export default function Admin() {
           </p>
         </div>
 
-        {/* Navigation Tabs */}
-        <FloatingCard className="mb-8 overflow-hidden">
+        {/* Navigation Tabs - Responsive */}
+        <FloatingCard className="mb-6 lg:mb-8 overflow-hidden">
           <div className="flex border-b border-gray-200">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -311,14 +316,14 @@ export default function Admin() {
                   setSelectedUsers(new Set());
                   setShowUserActions(false);
                 }}
-                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 font-medium transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center space-x-2 px-3 lg:px-6 py-3 lg:py-4 font-medium transition-all duration-300 ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
                     : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
                 }`}
               >
-                <tab.icon className="h-5 w-5" />
-                <span>{tab.label}</span>
+                <tab.icon className="h-4 w-4 lg:h-5 lg:w-5" />
+                <span className="text-sm lg:text-base">{tab.label}</span>
               </button>
             ))}
           </div>
@@ -326,10 +331,10 @@ export default function Admin() {
 
         {/* Error Message */}
         {error && (
-          <FloatingCard className="mb-8 bg-red-50 border-2 border-red-200">
-            <div className="p-6">
+          <FloatingCard className="mb-6 lg:mb-8 bg-red-50 border-2 border-red-200">
+            <div className="p-4 lg:p-6">
               <div className="flex items-center space-x-3">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <AlertTriangle className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
                 <div>
                   <h3 className="text-lg font-semibold text-red-800">Error</h3>
                   <p className="text-red-700">{error}</p>
@@ -347,14 +352,14 @@ export default function Admin() {
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-8">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-6 lg:space-y-8">
+            {/* Stats Grid - Responsive */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 text-center">
-                    <SkeletonLoader className="w-16 h-8 mx-auto mb-2" />
-                    <SkeletonLoader className="w-20 h-4 mx-auto" />
+                  <div key={index} className="bg-white rounded-xl shadow-lg p-4 lg:p-6 text-center">
+                    <SkeletonLoader className="w-12 lg:w-16 h-6 lg:h-8 mx-auto mb-2" />
+                    <SkeletonLoader className="w-16 lg:w-20 h-3 lg:h-4 mx-auto" />
                   </div>
                 ))
               ) : stats ? (
@@ -368,53 +373,53 @@ export default function Admin() {
                   { label: 'Users This Month', value: stats.usersThisMonth, icon: TrendingUp, color: 'from-indigo-500 to-indigo-600' },
                   { label: 'Reports This Month', value: stats.reportsThisMonth, icon: Calendar, color: 'from-orange-500 to-orange-600' }
                 ].map((stat, index) => (
-                  <FloatingCard key={index} delay={index * 100} className="p-6 text-center group hover:scale-105 transition-transform duration-300">
-                    <div className="flex justify-center mb-4">
-                      <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:shadow-xl transition-all duration-300`}>
-                        <stat.icon className="h-6 w-6 text-white" />
+                  <FloatingCard key={index} delay={index * 100} className="p-4 lg:p-6 text-center group hover:scale-105 transition-transform duration-300">
+                    <div className="flex justify-center mb-3 lg:mb-4">
+                      <div className={`p-2 lg:p-4 rounded-xl lg:rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:shadow-xl transition-all duration-300`}>
+                        <stat.icon className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
                       </div>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                    <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1 lg:mb-2">
                       <AnimatedCounter end={stat.value} />
                     </div>
-                    <div className="text-gray-600 font-medium">{stat.label}</div>
+                    <div className="text-xs lg:text-sm text-gray-600 font-medium">{stat.label}</div>
                   </FloatingCard>
                 ))
               ) : null}
             </div>
 
-            {/* Quick Actions */}
-            <FloatingCard className="p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <Settings className="h-6 w-6 mr-3 text-purple-600" />
+            {/* Quick Actions - Responsive */}
+            <FloatingCard className="p-6 lg:p-8">
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4 lg:mb-6 flex items-center">
+                <Settings className="h-5 w-5 lg:h-6 lg:w-6 mr-3 text-purple-600" />
                 Quick Actions
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
                 <GradientButton
                   onClick={() => setActiveTab('users')}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 p-6 h-auto flex-col"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 p-4 lg:p-6 h-auto flex-col"
                 >
-                  <Users className="h-8 w-8 mb-2" />
-                  <span className="text-lg font-semibold">Manage Users</span>
-                  <span className="text-sm opacity-90">View and manage all registered users</span>
+                  <Users className="h-6 w-6 lg:h-8 lg:w-8 mb-2" />
+                  <span className="text-base lg:text-lg font-semibold">Manage Users</span>
+                  <span className="text-xs lg:text-sm opacity-90">View and manage all registered users</span>
                 </GradientButton>
                 
                 <GradientButton
                   onClick={() => setActiveTab('reports')}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 p-6 h-auto flex-col"
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 p-4 lg:p-6 h-auto flex-col"
                 >
-                  <FileText className="h-8 w-8 mb-2" />
-                  <span className="text-lg font-semibold">Review Reports</span>
-                  <span className="text-sm opacity-90">Moderate and verify corruption reports</span>
+                  <FileText className="h-6 w-6 lg:h-8 lg:w-8 mb-2" />
+                  <span className="text-base lg:text-lg font-semibold">Review Reports</span>
+                  <span className="text-xs lg:text-sm opacity-90">Moderate and verify corruption reports</span>
                 </GradientButton>
                 
                 <GradientButton
                   onClick={loadData}
-                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 p-6 h-auto flex-col"
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 p-4 lg:p-6 h-auto flex-col"
                 >
-                  <RefreshCw className="h-8 w-8 mb-2" />
-                  <span className="text-lg font-semibold">Refresh Data</span>
-                  <span className="text-sm opacity-90">Update all statistics and data</span>
+                  <RefreshCw className="h-6 w-6 lg:h-8 lg:w-8 mb-2" />
+                  <span className="text-base lg:text-lg font-semibold">Refresh Data</span>
+                  <span className="text-xs lg:text-sm opacity-90">Update all statistics and data</span>
                 </GradientButton>
               </div>
             </FloatingCard>
@@ -423,9 +428,9 @@ export default function Admin() {
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="space-y-8">
-            {/* Users Filters */}
-            <FloatingCard className="p-6">
+          <div className="space-y-6 lg:space-y-8">
+            {/* Users Filters - Responsive */}
+            <FloatingCard className="p-4 lg:p-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-2">
                   <ModernInput
@@ -441,15 +446,15 @@ export default function Admin() {
                     ...prev,
                     hasReports: e.target.value === '' ? undefined : e.target.value === 'true'
                   }))}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-purple-500 focus:outline-none focus:ring-0 transition-all duration-300"
+                  className="px-3 lg:px-4 py-2 lg:py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-purple-500 focus:outline-none focus:ring-0 transition-all duration-300 text-sm lg:text-base"
                 >
                   <option value="">All Users</option>
                   <option value="true">Users with Reports</option>
                   <option value="false">Users without Reports</option>
                 </select>
-                <GradientButton onClick={loadData} disabled={isLoading}>
+                <GradientButton onClick={loadData} disabled={isLoading} size="sm">
                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  <span>Refresh</span>
+                  <span className="hidden lg:inline">Refresh</span>
                 </GradientButton>
               </div>
             </FloatingCard>
@@ -484,114 +489,94 @@ export default function Admin() {
                       ) : (
                         <Trash2 className="w-4 h-4" />
                       )}
-                      <span>Delete Selected</span>
+                      <span className="hidden lg:inline">Delete Selected</span>
                     </GradientButton>
                   </div>
                 </div>
               </FloatingCard>
             )}
 
-            {/* Users List */}
+            {/* Users List - Responsive */}
             <FloatingCard className="overflow-hidden">
-              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <Users className="h-6 w-6 mr-2 text-blue-600" />
+                  <h2 className="text-lg lg:text-xl font-semibold text-gray-900 flex items-center">
+                    <Users className="h-5 w-5 lg:h-6 lg:w-6 mr-2 text-blue-600" />
                     Registered Users ({usersCount})
                   </h2>
                   <div className="flex items-center space-x-2">
                     {users.length > 0 && (
-                      <label className="flex items-center space-x-2 text-sm text-gray-600">
+                      <label className="flex items-center space-x-2 text-xs lg:text-sm text-gray-600">
                         <input
                           type="checkbox"
                           checked={selectedUsers.size === users.length && users.length > 0}
                           onChange={handleSelectAllUsers}
                           className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                         />
-                        <span>Select All</span>
+                        <span className="hidden lg:inline">Select All</span>
                       </label>
                     )}
                     <GradientButton size="sm" className="bg-gradient-to-r from-green-500 to-green-600">
                       <Download className="w-4 h-4" />
-                      <span>Export</span>
+                      <span className="hidden lg:inline">Export</span>
                     </GradientButton>
                   </div>
                 </div>
               </div>
 
               {isLoading ? (
-                <div className="p-6">
+                <div className="p-4 lg:p-6">
                   {Array.from({ length: 5 }).map((_, index) => (
-                    <div key={index} className="flex justify-between items-center py-4 border-b border-gray-100 last:border-b-0">
-                      <div className="flex items-center space-x-4">
-                        <SkeletonLoader variant="circular" className="w-12 h-12" />
-                        <div>
-                          <SkeletonLoader className="w-48 h-4 mb-2" />
-                          <SkeletonLoader className="w-32 h-3" />
-                        </div>
-                      </div>
-                      <SkeletonLoader className="w-20 h-8" />
-                    </div>
+                    <SkeletonLoader key={index} variant="card" className="h-24 lg:h-32 mb-4" />
                   ))}
                 </div>
               ) : users.length > 0 ? (
                 <div className="divide-y divide-gray-200">
                   {users.map((user) => (
-                    <div key={user.id} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div key={user.id} className="p-4 lg:p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-3 lg:space-x-4 flex-1 min-w-0">
                           {/* Selection Checkbox */}
                           <input
                             type="checkbox"
                             checked={selectedUsers.has(user.id)}
                             onChange={() => handleUserSelect(user.id)}
-                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 flex-shrink-0"
                           />
                           
                           {/* User Avatar */}
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold">
+                          <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm lg:text-base flex-shrink-0">
                             {user.user_metadata.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                           </div>
                           
-                          {/* User Info */}
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
+                          {/* User Info - Responsive */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm lg:text-lg font-semibold text-gray-900 truncate">
                               {user.user_metadata.full_name || 'No name provided'}
                             </h3>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span className="flex items-center">
-                                <Mail className="h-4 w-4 mr-1" />
-                                {user.email}
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-4 text-xs lg:text-sm text-gray-500 space-y-1 lg:space-y-0">
+                              <span className="flex items-center truncate">
+                                <Mail className="h-3 w-3 lg:h-4 lg:w-4 mr-1 flex-shrink-0" />
+                                <span className="truncate">{user.email}</span>
                               </span>
                               <span className="flex items-center">
-                                <Calendar className="h-4 w-4 mr-1" />
+                                <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1 flex-shrink-0" />
                                 Joined {new Date(user.created_at).toLocaleDateString()}
                               </span>
-                              {user.user_metadata.location && (
-                                <span className="flex items-center">
-                                  <MapPin className="h-4 w-4 mr-1" />
-                                  {user.user_metadata.location}
-                                </span>
-                              )}
-                              {user.user_metadata.phone && (
-                                <span className="flex items-center">
-                                  <Phone className="h-4 w-4 mr-1" />
-                                  {user.user_metadata.phone}
-                                </span>
-                              )}
                             </div>
                             {user.last_sign_in_at && (
                               <div className="text-xs text-gray-400 mt-1">
-                                Last active: {new Date(user.last_sign_in_at).toLocaleString()}
+                                Last active: {new Date(user.last_sign_in_at).toLocaleDateString()}
                               </div>
                             )}
                           </div>
                         </div>
                         
-                        {/* User Actions */}
-                        <div className="flex items-center space-x-4">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">{user.report_count}</div>
+                        {/* User Actions - Responsive */}
+                        <div className="flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
+                          {/* Report Count */}
+                          <div className="text-center hidden lg:block">
+                            <div className="text-xl lg:text-2xl font-bold text-blue-600">{user.report_count}</div>
                             <div className="text-xs text-gray-500">Reports</div>
                           </div>
                           
@@ -600,55 +585,54 @@ export default function Admin() {
                             {user.email_confirmed_at ? (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 <UserCheck className="h-3 w-3 mr-1" />
-                                Verified
+                                <span className="hidden lg:inline">Verified</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                 <Clock className="h-3 w-3 mr-1" />
-                                Pending
+                                <span className="hidden lg:inline">Pending</span>
                               </span>
                             )}
                           </div>
                           
-                          {/* Action Buttons */}
-                          <div className="flex items-center space-x-2">
-                            <GradientButton 
-                              size="sm" 
-                              className="bg-gradient-to-r from-blue-500 to-blue-600"
-                              onClick={() => window.open(`/admin/user/${user.id}`, '_blank')}
+                          {/* Action Buttons - Icon Only for Tablet */}
+                          <div className="flex items-center space-x-1 lg:space-x-2">
+                            {/* View Button */}
+                            <button
+                              onClick={() => handleViewUser(user.id, user.email)}
+                              className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                              title="View User"
                             >
                               <Eye className="w-4 h-4" />
-                              <span>View</span>
-                            </GradientButton>
+                            </button>
                             
-                            <GradientButton 
-                              size="sm" 
-                              className="bg-gradient-to-r from-orange-500 to-orange-600"
+                            {/* Reset Password Button */}
+                            <button
                               onClick={() => handleResetUserPassword(user.id, user.email)}
                               disabled={userActionLoading === user.id}
+                              className="p-2 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition-colors disabled:opacity-50"
+                              title="Reset Password"
                             >
                               {userActionLoading === user.id ? (
                                 <RefreshCw className="w-4 h-4 animate-spin" />
                               ) : (
                                 <Key className="w-4 h-4" />
                               )}
-                              <span>Reset</span>
-                            </GradientButton>
+                            </button>
                             
-                            <GradientButton 
-                              size="sm" 
-                              variant="danger"
+                            {/* Delete Button */}
+                            <button
                               onClick={() => handleDeleteUser(user.id, user.email)}
                               disabled={userActionLoading === user.id}
-                              className="bg-gradient-to-r from-red-500 to-red-600"
+                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                              title="Delete User"
                             >
                               {userActionLoading === user.id ? (
                                 <RefreshCw className="w-4 h-4 animate-spin" />
                               ) : (
                                 <Trash2 className="w-4 h-4" />
                               )}
-                              <span>Delete</span>
-                            </GradientButton>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -656,9 +640,9 @@ export default function Admin() {
                   ))}
                 </div>
               ) : (
-                <div className="p-12 text-center">
-                  <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">No Users Found</h3>
+                <div className="p-8 lg:p-12 text-center">
+                  <Users className="h-12 w-12 lg:h-16 lg:w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg lg:text-xl font-semibold text-gray-700 mb-2">No Users Found</h3>
                   <p className="text-gray-500">No users match your current filters.</p>
                 </div>
               )}
@@ -668,9 +652,9 @@ export default function Admin() {
 
         {/* Reports Tab */}
         {activeTab === 'reports' && (
-          <div className="space-y-8">
-            {/* Reports Filters */}
-            <FloatingCard className="p-6">
+          <div className="space-y-6 lg:space-y-8">
+            {/* Reports Filters - Responsive */}
+            <FloatingCard className="p-4 lg:p-6">
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div className="md:col-span-2">
                   <ModernInput
@@ -683,7 +667,7 @@ export default function Admin() {
                 <select
                   value={reportFilters.category}
                   onChange={(e) => setReportFilters(prev => ({ ...prev, category: e.target.value }))}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-purple-500 focus:outline-none focus:ring-0 transition-all duration-300"
+                  className="px-3 lg:px-4 py-2 lg:py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-purple-500 focus:outline-none focus:ring-0 transition-all duration-300 text-sm lg:text-base"
                 >
                   <option value="">All Categories</option>
                   {Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => (
@@ -693,7 +677,7 @@ export default function Admin() {
                 <select
                   value={reportFilters.status}
                   onChange={(e) => setReportFilters(prev => ({ ...prev, status: e.target.value }))}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-purple-500 focus:outline-none focus:ring-0 transition-all duration-300"
+                  className="px-3 lg:px-4 py-2 lg:py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-purple-500 focus:outline-none focus:ring-0 transition-all duration-300 text-sm lg:text-base"
                 >
                   <option value="">All Status</option>
                   <option value="pending">Pending</option>
@@ -701,42 +685,42 @@ export default function Admin() {
                   <option value="disputed">Disputed</option>
                   <option value="resolved">Resolved</option>
                 </select>
-                <GradientButton onClick={loadData} disabled={isLoading}>
+                <GradientButton onClick={loadData} disabled={isLoading} size="sm">
                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  <span>Refresh</span>
+                  <span className="hidden lg:inline">Refresh</span>
                 </GradientButton>
               </div>
             </FloatingCard>
 
-            {/* Reports List */}
+            {/* Reports List - Responsive */}
             <FloatingCard className="overflow-hidden">
-              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center justify-between">
+              <div className="p-4 lg:p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                <h2 className="text-lg lg:text-xl font-semibold text-gray-900 flex items-center justify-between">
                   <span className="flex items-center">
-                    <FileText className="h-6 w-6 mr-2 text-green-600" />
+                    <FileText className="h-5 w-5 lg:h-6 lg:w-6 mr-2 text-green-600" />
                     Corruption Reports ({reportsCount})
                   </span>
                   <GradientButton size="sm" className="bg-gradient-to-r from-green-500 to-green-600">
                     <Download className="w-4 h-4" />
-                    <span>Export</span>
+                    <span className="hidden lg:inline">Export</span>
                   </GradientButton>
                 </h2>
               </div>
 
               {isLoading ? (
-                <div className="p-6">
+                <div className="p-4 lg:p-6">
                   {Array.from({ length: 5 }).map((_, index) => (
-                    <SkeletonLoader key={index} variant="card" className="h-32 mb-4" />
+                    <SkeletonLoader key={index} variant="card" className="h-24 lg:h-32 mb-4" />
                   ))}
                 </div>
               ) : reports.length > 0 ? (
                 <div className="divide-y divide-gray-200">
                   {reports.map((report) => (
-                    <div key={report.id} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div key={report.id} className="p-4 lg:p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-4 mb-3">
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-base lg:text-lg font-semibold text-gray-900 truncate">
                               {report.corrupt_person_name}
                             </h3>
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(report.status)}`}>
@@ -750,7 +734,7 @@ export default function Admin() {
                             )}
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 lg:gap-4 text-xs lg:text-sm text-gray-600 mb-3">
                             <div>
                               <span className="font-medium">Designation:</span> {report.designation}
                             </div>
@@ -762,7 +746,7 @@ export default function Admin() {
                             </div>
                           </div>
                           
-                          <p className="text-gray-700 mb-3 line-clamp-2">
+                          <p className="text-sm lg:text-base text-gray-700 mb-3 line-clamp-2">
                             {report.description}
                           </p>
                           
@@ -771,16 +755,17 @@ export default function Admin() {
                             {!report.is_anonymous && report.reporter_email && (
                               <span>By: {report.reporter_email}</span>
                             )}
-                            <span>Upvotes: {report.upvotes}</span>
-                            <span>Downvotes: {report.downvotes}</span>
+                            <span>↑{report.upvotes}</span>
+                            <span>↓{report.downvotes}</span>
                           </div>
                         </div>
                         
-                        <div className="flex items-center space-x-2 ml-4">
+                        {/* Report Actions - Icon Only for Tablet */}
+                        <div className="flex items-center space-x-1 lg:space-x-2 ml-4 flex-shrink-0">
                           <select
                             value={report.status}
                             onChange={(e) => handleStatusUpdate(report.id, e.target.value)}
-                            className="text-sm border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="text-xs lg:text-sm border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                           >
                             <option value="pending">Pending</option>
                             <option value="verified">Verified</option>
@@ -788,27 +773,29 @@ export default function Admin() {
                             <option value="resolved">Resolved</option>
                           </select>
                           
-                          <GradientButton size="sm" className="bg-gradient-to-r from-blue-500 to-blue-600">
+                          <button
+                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                            title="View Report"
+                          >
                             <Eye className="w-4 h-4" />
-                          </GradientButton>
+                          </button>
                           
-                          <GradientButton 
-                            size="sm" 
-                            variant="danger"
+                          <button
                             onClick={() => handleDeleteReport(report.id)}
-                            className="bg-gradient-to-r from-red-500 to-red-600"
+                            className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                            title="Delete Report"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </GradientButton>
+                          </button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="p-12 text-center">
-                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">No Reports Found</h3>
+                <div className="p-8 lg:p-12 text-center">
+                  <FileText className="h-12 w-12 lg:h-16 lg:w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg lg:text-xl font-semibold text-gray-700 mb-2">No Reports Found</h3>
                   <p className="text-gray-500">No reports match your current filters.</p>
                 </div>
               )}
@@ -816,11 +803,11 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* Pagination - Responsive */}
         {(activeTab === 'users' || activeTab === 'reports') && totalPages > 1 && (
-          <FloatingCard className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+          <FloatingCard className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0">
+              <div className="text-xs lg:text-sm text-gray-600">
                 Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, activeTab === 'users' ? usersCount : reportsCount)} of {activeTab === 'users' ? usersCount : reportsCount} results
               </div>
               <div className="flex items-center space-x-2">

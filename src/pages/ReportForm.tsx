@@ -372,8 +372,9 @@ export default function ReportForm() {
                 Corrupt Person Details
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+              {/* First Row: Full Name and Designation - Properly Aligned */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="space-y-2">
                   <CorruptPersonAutocomplete
                     label="Full Name"
                     value={corruptPersonName}
@@ -402,8 +403,8 @@ export default function ReportForm() {
                   />
                 </div>
                 
-                <div>
-                  <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label htmlFor="designation" className="block text-sm font-medium text-gray-700">
                     Designation/Job Title *
                     {selectedPersonInfo && (
                       <span className="text-green-600 ml-2 text-xs">(Auto-filled from previous report)</span>
@@ -425,7 +426,7 @@ export default function ReportForm() {
                         return true;
                       }
                     })}
-                    className={`block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                    className={`block w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 placeholder-gray-400 transform hover:scale-[1.02] focus:scale-[1.02] ${
                       selectedPersonInfo ? 'bg-green-50 border-green-200' : ''
                     }`}
                     placeholder="e.g., Government Official, Manager, Inspector"
@@ -433,6 +434,7 @@ export default function ReportForm() {
                   {errors.designation && (
                     <p className="text-sm text-red-600 mt-1">{errors.designation.message}</p>
                   )}
+                  <p className="text-sm text-gray-500">Enter the person's job title or position</p>
                 </div>
               </div>
 
@@ -460,17 +462,17 @@ export default function ReportForm() {
               )}
 
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                   Address (if known)
                 </label>
                 <input
                   type="text"
                   id="address"
                   {...register('address')}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                  className="block w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 placeholder-gray-400 transform hover:scale-[1.02] focus:scale-[1.02]"
                   placeholder="Enter address or workplace"
                 />
-                <p className="text-sm text-gray-500 mt-1">This helps us verify the report</p>
+                <p className="text-sm text-gray-500 mt-2">This helps us verify the report</p>
               </div>
             </div>
 
@@ -480,8 +482,9 @@ export default function ReportForm() {
                 Incident Details
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+              {/* Second Row: Area/Region and Category - Properly Aligned */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="space-y-2">
                   <LocationAutocomplete
                     label="Area/Region"
                     value={areaRegion}
@@ -491,7 +494,7 @@ export default function ReportForm() {
                     required
                   />
                   {selectedPersonInfo && (
-                    <p className="text-xs text-green-600 mt-1">
+                    <p className="text-xs text-green-600">
                       Auto-filled from previous report: {selectedPersonInfo.area}
                     </p>
                   )}
@@ -514,14 +517,14 @@ export default function ReportForm() {
                   />
                 </div>
                 
-                <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700">
                     Category of Corruption *
                   </label>
                   <select
                     id="category"
                     {...register('category', { required: 'Category is required' })}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                    className="block w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 transform hover:scale-[1.02] focus:scale-[1.02]"
                   >
                     <option value="">Select a category</option>
                     {categoryOptions.map((option) => (
@@ -533,11 +536,12 @@ export default function ReportForm() {
                   {errors.category && (
                     <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
                   )}
+                  <p className="text-sm text-gray-500">Choose the type of corruption reported</p>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
                   Detailed Description *
                 </label>
                 <textarea
@@ -559,13 +563,13 @@ export default function ReportForm() {
                       return true;
                     }
                   })}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors resize-vertical"
+                  className="block w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 placeholder-gray-400 resize-vertical transform hover:scale-[1.02] focus:scale-[1.02]"
                   placeholder="Provide a detailed account of the corruption incident..."
                 />
                 {errors.description && (
-                  <p className="text-sm text-red-600 mt-1">{errors.description.message}</p>
+                  <p className="text-sm text-red-600 mt-2">{errors.description.message}</p>
                 )}
-                <p className="text-sm text-gray-500 mt-1">Include dates, amounts, witnesses, and any other relevant details</p>
+                <p className="text-sm text-gray-500 mt-2">Include dates, amounts, witnesses, and any other relevant details</p>
               </div>
             </div>
 
@@ -726,7 +730,7 @@ export default function ReportForm() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="reporter_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="reporter_name" className="block text-sm font-medium text-gray-700 mb-2">
                       Your Name {user && <span className="text-green-600">✓</span>}
                     </label>
                     <div className="relative">
@@ -736,7 +740,7 @@ export default function ReportForm() {
                         {...register('reporter_name', {
                           required: !isAnonymous ? 'Name is required for non-anonymous reports' : false
                         })}
-                        className={`block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                        className={`block w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 placeholder-gray-400 transform hover:scale-[1.02] focus:scale-[1.02] ${
                           user ? 'bg-green-50 border-green-200' : ''
                         }`}
                         placeholder="Enter your full name"
@@ -751,13 +755,15 @@ export default function ReportForm() {
                     {errors.reporter_name && (
                       <p className="text-sm text-red-600 mt-1">{errors.reporter_name.message}</p>
                     )}
-                    {user && (
+                    {user ? (
                       <p className="text-sm text-green-600 mt-1">Auto-filled from your account</p>
+                    ) : (
+                      <p className="text-sm text-gray-500 mt-1">Enter your full name</p>
                     )}
                   </div>
                   
                   <div>
-                    <label htmlFor="reporter_email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="reporter_email" className="block text-sm font-medium text-gray-700 mb-2">
                       Your Email {user && <span className="text-green-600">✓</span>}
                     </label>
                     <div className="relative">
@@ -771,7 +777,7 @@ export default function ReportForm() {
                             message: 'Invalid email address'
                           }
                         })}
-                        className={`block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors ${
+                        className={`block w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 placeholder-gray-400 transform hover:scale-[1.02] focus:scale-[1.02] ${
                           user ? 'bg-green-50 border-green-200' : ''
                         }`}
                         placeholder="Enter your email address"

@@ -51,6 +51,12 @@ export interface AdminStats {
 }
 
 export class AdminDatabaseService {
+  // Get current user's session token
+  private static async getAuthToken(): Promise<string | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  }
+
   // Get all users with their report counts
   static async getAllUsers(filters?: {
     search?: string;
@@ -59,78 +65,29 @@ export class AdminDatabaseService {
     offset?: number;
   }): Promise<{ data: AdminUser[] | null; error: any; count?: number }> {
     try {
-      // First get all users from auth.users (admin only)
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers({
-        page: filters?.offset ? Math.floor(filters.offset / (filters.limit || 50)) + 1 : 1,
-        perPage: filters?.limit || 50
+      const token = await this.getAuthToken();
+      if (!token) {
+        return { data: null, error: new Error('Not authenticated') };
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(filters || {})
       });
 
-      if (authError) {
-        console.error('Auth error:', authError);
-        return { data: null, error: authError };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
-      if (!authUsers?.users) {
-        return { data: [], error: null, count: 0 };
-      }
-
-      // Get report counts for each user
-      const userIds = authUsers.users.map(user => user.id);
-      const { data: reportCounts, error: reportError } = await supabase
-        .from('corruption_reports')
-        .select('reporter_email')
-        .not('reporter_email', 'is', null);
-
-      if (reportError) {
-        console.warn('Error fetching report counts:', reportError);
-      }
-
-      // Count reports by email
-      const reportCountMap = new Map<string, number>();
-      if (reportCounts) {
-        reportCounts.forEach(report => {
-          if (report.reporter_email) {
-            const count = reportCountMap.get(report.reporter_email) || 0;
-            reportCountMap.set(report.reporter_email, count + 1);
-          }
-        });
-      }
-
-      // Transform users data
-      let users: AdminUser[] = authUsers.users.map(user => ({
-        id: user.id,
-        email: user.email || '',
-        created_at: user.created_at,
-        email_confirmed_at: user.email_confirmed_at,
-        last_sign_in_at: user.last_sign_in_at,
-        user_metadata: user.user_metadata || {},
-        report_count: reportCountMap.get(user.email || '') || 0
-      }));
-
-      // Apply filters
-      if (filters?.search) {
-        const searchLower = filters.search.toLowerCase();
-        users = users.filter(user => 
-          user.email.toLowerCase().includes(searchLower) ||
-          user.user_metadata.full_name?.toLowerCase().includes(searchLower) ||
-          user.id.toLowerCase().includes(searchLower)
-        );
-      }
-
-      if (filters?.hasReports !== undefined) {
-        users = users.filter(user => 
-          filters.hasReports ? user.report_count > 0 : user.report_count === 0
-        );
-      }
-
-      // Sort by creation date (newest first)
-      users.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      return { 
-        data: users, 
-        error: null, 
-        count: users.length 
-      };
+      const result = await response.json();
+      return { data: result.data, error: null, count: result.count };
 
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -195,52 +152,28 @@ export class AdminDatabaseService {
   // Get admin dashboard statistics
   static async getAdminStats(): Promise<{ data: AdminStats | null; error: any }> {
     try {
-      // Get total users count
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      const totalUsers = authUsers?.users?.length || 0;
-
-      // Get report statistics
-      const { data: allReports, error: reportsError } = await supabase
-        .from('corruption_reports')
-        .select('id, is_anonymous, status, created_at');
-
-      if (reportsError) {
-        throw reportsError;
+      const token = await this.getAuthToken();
+      if (!token) {
+        return { data: null, error: new Error('Not authenticated') };
       }
 
-      const totalReports = allReports?.length || 0;
-      const anonymousReports = allReports?.filter(r => r.is_anonymous).length || 0;
-      const verifiedReports = allReports?.filter(r => r.status === 'verified').length || 0;
-      const pendingReports = allReports?.filter(r => r.status === 'pending').length || 0;
-      const resolvedReports = allReports?.filter(r => r.status === 'resolved').length || 0;
-      const disputedReports = allReports?.filter(r => r.status === 'disputed').length || 0;
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-stats`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
 
-      // Get this month's statistics
-      const thisMonth = new Date();
-      thisMonth.setDate(1);
-      thisMonth.setHours(0, 0, 0, 0);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
 
-      const reportsThisMonth = allReports?.filter(r => 
-        new Date(r.created_at) >= thisMonth
-      ).length || 0;
-
-      const usersThisMonth = authUsers?.users?.filter(u => 
-        new Date(u.created_at) >= thisMonth
-      ).length || 0;
-
-      const stats: AdminStats = {
-        totalUsers,
-        totalReports,
-        anonymousReports,
-        verifiedReports,
-        pendingReports,
-        resolvedReports,
-        disputedReports,
-        reportsThisMonth,
-        usersThisMonth
-      };
-
-      return { data: stats, error: null };
+      const result = await response.json();
+      return { data: result.data, error: null };
 
     } catch (error) {
       console.error('Error fetching admin stats:', error);

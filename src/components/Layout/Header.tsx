@@ -51,6 +51,12 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
     setAuthModalOpen(true);
   };
 
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+    // Reset to login mode when closing
+    setAuthMode('login');
+  };
+
   return (
     <>
       <header className="bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
@@ -286,7 +292,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
       {/* Auth Modal */}
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        onClose={closeAuthModal}
         initialMode={authMode}
       />
     </>

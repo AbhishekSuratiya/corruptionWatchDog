@@ -25,6 +25,15 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  // Reset mode when initialMode changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setMessage(null);
+      setErrors({});
+    }
+  }, [isOpen, initialMode]);
+
   if (!isOpen) return null;
 
   const validateForm = () => {
@@ -77,19 +86,29 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
           options: {
             data: {
               full_name: formData.fullName
-            }
+            },
+            // Disable email confirmation for immediate login
+            emailRedirectTo: undefined
           }
         });
 
         if (error) throw error;
 
-        setMessage({
-          type: 'success',
-          text: 'Account created successfully! Please check your email to verify your account.'
-        });
-        
-        // Reset form
-        setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
+        // Check if user was created successfully
+        if (data.user) {
+          setMessage({
+            type: 'success',
+            text: 'Account created successfully! You are now logged in.'
+          });
+          
+          // Reset form
+          setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
+          
+          // Close modal after successful signup
+          setTimeout(() => {
+            onClose();
+          }, 1500);
+        }
         
       } else if (mode === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -107,7 +126,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
         // Close modal after successful login
         setTimeout(() => {
           onClose();
-        }, 1500);
+        }, 1000);
         
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
@@ -122,9 +141,22 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
         });
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
+      
+      // Handle specific error messages
+      let errorMessage = error.message || 'An error occurred. Please try again.';
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Please check your email and click the confirmation link before signing in.';
+      } else if (error.message?.includes('User already registered')) {
+        errorMessage = 'An account with this email already exists. Please sign in instead.';
+      }
+      
       setMessage({
         type: 'error',
-        text: error.message || 'An error occurred. Please try again.'
+        text: errorMessage
       });
     } finally {
       setIsLoading(false);
@@ -136,6 +168,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+    // Clear messages when user starts typing
+    if (message) {
+      setMessage(null);
     }
   };
 
@@ -287,7 +323,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                 <>
                   <button
                     type="button"
-                    onClick={() => setMode('forgot')}
+                    onClick={() => {
+                      setMode('forgot');
+                      setMessage(null);
+                      setErrors({});
+                    }}
                     className="block w-full text-center text-sm text-red-600 hover:text-red-700 font-medium transition-colors"
                   >
                     Forgot your password?
@@ -296,7 +336,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                     Don't have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => setMode('signup')}
+                      onClick={() => {
+                        setMode('signup');
+                        setMessage(null);
+                        setErrors({});
+                      }}
                       className="text-red-600 hover:text-red-700 font-medium transition-colors"
                     >
                       Sign up
@@ -310,7 +354,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                   Already have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => setMode('login')}
+                    onClick={() => {
+                      setMode('login');
+                      setMessage(null);
+                      setErrors({});
+                    }}
                     className="text-red-600 hover:text-red-700 font-medium transition-colors"
                   >
                     Sign in
@@ -323,7 +371,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                   Remember your password?{' '}
                   <button
                     type="button"
-                    onClick={() => setMode('login')}
+                    onClick={() => {
+                      setMode('login');
+                      setMessage(null);
+                      setErrors({});
+                    }}
                     className="text-red-600 hover:text-red-700 font-medium transition-colors"
                   >
                     Sign in

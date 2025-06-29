@@ -45,17 +45,17 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo Section - Isolated with proper spacing */}
-            <div className="flex items-center flex-shrink-0 mr-8 lg:mr-12">
-              <Link to="/" className="flex items-center space-x-4 group">
+            <div className="flex items-center flex-shrink-0 mr-4 sm:mr-8 lg:mr-12">
+              <Link to="/" className="flex items-center space-x-3 sm:space-x-4 group">
                 <div className="relative">
                   <div className="absolute inset-0 bg-red-500 rounded-lg blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                  <div className="relative p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                    <Shield className="h-7 w-7 text-white" />
+                  <div className="relative p-2 sm:p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                    <Shield className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
                     <AlertTriangle className="h-3 w-3 text-yellow-400 absolute -top-1 -right-1 animate-pulse" />
                   </div>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-red-600 bg-clip-text text-transparent group-hover:from-red-600 group-hover:to-red-800 transition-all duration-300 leading-tight">
+                  <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-red-600 bg-clip-text text-transparent group-hover:from-red-600 group-hover:to-red-800 transition-all duration-300 leading-tight">
                     Corruption Watchdog
                   </h1>
                   <p className="text-xs text-gray-500 -mt-0.5 leading-tight">Fighting Corruption Together</p>
@@ -63,15 +63,15 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
               </Link>
             </div>
 
-            {/* Navigation Section - Separated with significant spacing */}
-            <div className="flex-1 flex justify-center">
+            {/* Navigation Section - Flexible with proper constraints */}
+            <div className="flex-1 flex justify-center min-w-0 mx-2 sm:mx-4">
               {/* Desktop Navigation - Better spacing and responsive breakpoints */}
-              <nav className="hidden lg:flex items-center space-x-3">
+              <nav className="hidden lg:flex items-center space-x-2 xl:space-x-3">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
+                    className={`px-3 xl:px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
                       isActive(item.href)
                         ? item.href === '/admin'
                           ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25'
@@ -93,7 +93,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                       isActive(item.href)
                         ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
                         : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
@@ -105,21 +105,23 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                 {/* More menu for remaining items */}
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all duration-300"
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all duration-300"
                 >
                   More
                 </button>
               </nav>
             </div>
 
-            {/* Auth Section - Right aligned with proper spacing */}
-            <div className="flex items-center space-x-4 flex-shrink-0 ml-8">
+            {/* Auth Section - Right aligned with proper spacing and constraints */}
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0 min-w-0">
               {loading ? (
-                <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-lg animate-pulse"></div>
               ) : user ? (
-                <UserMenu user={user} />
+                <div className="max-w-[200px] sm:max-w-[240px] w-full">
+                  <UserMenu user={user} />
+                </div>
               ) : (
-                <div className="hidden sm:flex items-center space-x-3">
+                <div className="hidden sm:flex items-center space-x-2 sm:space-x-3">
                   <GradientButton
                     variant="secondary"
                     size="sm"
@@ -142,9 +144,9 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
               {/* Mobile menu button - Better positioning */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:flex lg:hidden p-2.5 rounded-xl text-gray-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm transition-all duration-300 transform hover:scale-105"
+                className="md:flex lg:hidden p-2 sm:p-2.5 rounded-xl text-gray-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm transition-all duration-300 transform hover:scale-105 flex-shrink-0"
               >
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {isMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
               </button>
             </div>
           </div>

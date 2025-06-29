@@ -41,18 +41,18 @@ export default function UserMenu({ user }: UserMenuProps) {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* User Button - Fixed with proper contrast */}
+      {/* User Button - Responsive with proper constraints */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300 group max-w-xs"
+        className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300 group w-full max-w-[200px] sm:max-w-[240px]"
       >
         {/* Avatar - Fixed size */}
-        <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg flex-shrink-0">
           {getUserInitials()}
         </div>
         
-        {/* User Info - Always visible with proper colors */}
-        <div className="flex flex-col text-left min-w-0 flex-1">
+        {/* User Info - Responsive with proper truncation */}
+        <div className="flex flex-col text-left min-w-0 flex-1 hidden sm:block">
           <div className="text-sm font-semibold text-gray-900 leading-tight truncate">
             {getUserDisplayName()}
           </div>
@@ -65,9 +65,9 @@ export default function UserMenu({ user }: UserMenuProps) {
         <ChevronDown className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 text-gray-600 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu - Fixed positioning and responsive width */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
+        <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-fade-in">
           {/* User Info Header */}
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-start space-x-3">
@@ -76,7 +76,7 @@ export default function UserMenu({ user }: UserMenuProps) {
                 {getUserInitials()}
               </div>
               
-              {/* User details */}
+              {/* User details - Better responsive handling */}
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-gray-900 break-words leading-tight">
                   {getUserDisplayName()}

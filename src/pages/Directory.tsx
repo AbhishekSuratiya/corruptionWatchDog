@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter, RefreshCw, Eye, X, FileText, Image, Video, Download, ArrowLeft, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter, RefreshCw, Eye, X, FileText, Image, Video, Download, ArrowLeft, Clock, CheckCircle, XCircle, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import GradientButton from '../components/UI/GradientButton';
 import ModernInput from '../components/UI/ModernInput';
 import FloatingCard from '../components/UI/FloatingCard';
@@ -37,6 +37,227 @@ interface DetailedReport {
   downvotes: number;
 }
 
+interface EvidenceViewerProps {
+  filename: string;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+// Evidence Viewer Modal Component
+function EvidenceViewer({ filename, isOpen, onClose }: EvidenceViewerProps) {
+  const [zoom, setZoom] = useState(100);
+  const [rotation, setRotation] = useState(0);
+
+  if (!isOpen) return null;
+
+  const getFileType = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext || '')) {
+      return 'image';
+    } else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(ext || '')) {
+      return 'video';
+    } else if (['pdf'].includes(ext || '')) {
+      return 'pdf';
+    } else if (['doc', 'docx', 'txt', 'rtf'].includes(ext || '')) {
+      return 'document';
+    } else {
+      return 'unknown';
+    }
+  };
+
+  const fileType = getFileType(filename);
+
+  // For demo purposes, we'll use placeholder URLs
+  // In production, these would be actual file URLs from your storage
+  const getFileUrl = (filename: string) => {
+    const fileType = getFileType(filename);
+    switch (fileType) {
+      case 'image':
+        return `https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=800&h=600&fit=crop&crop=center`;
+      case 'video':
+        return `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`;
+      case 'pdf':
+        return `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`;
+      default:
+        return '';
+    }
+  };
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 300));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 25));
+  const handleRotate = () => setRotation(prev => (prev + 90) % 360);
+  const handleReset = () => {
+    setZoom(100);
+    setRotation(0);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      
+      {/* Modal */}
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-6xl max-h-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                {fileType === 'image' && <Image className="h-5 w-5 text-blue-600" />}
+                {fileType === 'video' && <Video className="h-5 w-5 text-blue-600" />}
+                {fileType === 'pdf' && <FileText className="h-5 w-5 text-blue-600" />}
+                {fileType === 'document' && <FileText className="h-5 w-5 text-blue-600" />}
+                {fileType === 'unknown' && <FileText className="h-5 w-5 text-blue-600" />}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{filename}</h3>
+                <p className="text-sm text-gray-500 capitalize">{fileType} Evidence File</p>
+              </div>
+            </div>
+            
+            {/* Controls */}
+            <div className="flex items-center space-x-2">
+              {fileType === 'image' && (
+                <>
+                  <button
+                    onClick={handleZoomOut}
+                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm text-gray-600 min-w-[3rem] text-center">{zoom}%</span>
+                  <button
+                    onClick={handleZoomIn}
+                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={handleRotate}
+                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                    title="Rotate"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="px-3 py-1 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                  >
+                    Reset
+                  </button>
+                </>
+              )}
+              
+              <a
+                href={getFileUrl(filename)}
+                download={filename}
+                className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                title="Download"
+              >
+                <Download className="h-4 w-4" />
+              </a>
+              
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="relative overflow-auto max-h-[calc(100vh-200px)]">
+            {fileType === 'image' && (
+              <div className="flex items-center justify-center p-8 bg-gray-50">
+                <img
+                  src={getFileUrl(filename)}
+                  alt={filename}
+                  className="max-w-full max-h-full object-contain transition-all duration-300 shadow-lg rounded-lg"
+                  style={{
+                    transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
+                    transformOrigin: 'center'
+                  }}
+                />
+              </div>
+            )}
+
+            {fileType === 'video' && (
+              <div className="flex items-center justify-center p-8 bg-black">
+                <video
+                  src={getFileUrl(filename)}
+                  controls
+                  className="max-w-full max-h-full rounded-lg shadow-lg"
+                  style={{ maxHeight: 'calc(100vh - 300px)' }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )}
+
+            {fileType === 'pdf' && (
+              <div className="h-full">
+                <iframe
+                  src={getFileUrl(filename)}
+                  className="w-full h-full min-h-[600px]"
+                  title={filename}
+                />
+              </div>
+            )}
+
+            {(fileType === 'document' || fileType === 'unknown') && (
+              <div className="flex flex-col items-center justify-center p-16 bg-gray-50">
+                <div className="p-6 bg-white rounded-2xl shadow-lg text-center">
+                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Document Preview</h3>
+                  <p className="text-gray-600 mb-6">
+                    This file type cannot be previewed directly in the browser.
+                  </p>
+                  <div className="space-y-3">
+                    <div className="text-sm text-gray-500">
+                      <strong>Filename:</strong> {filename}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      <strong>Type:</strong> {fileType.charAt(0).toUpperCase() + fileType.slice(1)} file
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <a
+                      href={getFileUrl(filename)}
+                      download={filename}
+                      className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download File</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div>
+                Evidence file: <span className="font-medium">{filename}</span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span>Use controls above to zoom, rotate, or download</span>
+                <kbd className="px-2 py-1 bg-gray-200 rounded text-xs">ESC</kbd>
+                <span>to close</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Directory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -52,6 +273,27 @@ export default function Directory() {
   const [detailedReports, setDetailedReports] = useState<DetailedReport[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
+
+  // Evidence viewer state
+  const [evidenceViewer, setEvidenceViewer] = useState<{
+    isOpen: boolean;
+    filename: string;
+  }>({
+    isOpen: false,
+    filename: ''
+  });
+
+  // Handle ESC key to close evidence viewer
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && evidenceViewer.isOpen) {
+        setEvidenceViewer({ isOpen: false, filename: '' });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [evidenceViewer.isOpen]);
 
   useEffect(() => {
     fetchDefaulters();
@@ -157,6 +399,21 @@ export default function Directory() {
     setSelectedDefaulter(null);
     setDetailedReports([]);
     setDetailsError(null);
+  };
+
+  const handleEvidenceClick = (filename: string) => {
+    console.log('Opening evidence viewer for:', filename);
+    setEvidenceViewer({
+      isOpen: true,
+      filename
+    });
+  };
+
+  const handleCloseEvidenceViewer = () => {
+    setEvidenceViewer({
+      isOpen: false,
+      filename: ''
+    });
   };
 
   const filteredDefaulters = defaulters.filter(defaulter => {
@@ -337,25 +594,54 @@ export default function Directory() {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {report.evidence_files.map((file, fileIndex) => (
-                                <div key={fileIndex} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div 
+                                  key={fileIndex} 
+                                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-blue-300"
+                                  onClick={() => handleEvidenceClick(file)}
+                                >
                                   <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                    <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
                                       {getEvidenceIcon(file)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                      <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors">
                                         {file}
                                       </p>
-                                      <p className="text-xs text-gray-500">
-                                        Evidence file
+                                      <p className="text-xs text-gray-500 group-hover:text-blue-600 transition-colors">
+                                        Click to view evidence
                                       </p>
                                     </div>
-                                    <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
-                                      <Download className="h-4 w-4" />
-                                    </button>
+                                    <div className="flex items-center space-x-1">
+                                      <button 
+                                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                        title="View Evidence"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEvidenceClick(file);
+                                        }}
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </button>
+                                      <button 
+                                        className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                                        title="Download"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle download
+                                        }}
+                                      >
+                                        <Download className="h-4 w-4" />
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               ))}
+                            </div>
+                            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-center space-x-2 text-sm text-blue-700">
+                                <Eye className="h-4 w-4" />
+                                <span>Click on any evidence file to view it in full screen</span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -505,6 +791,13 @@ export default function Directory() {
               </FloatingCard>
             )}
           </div>
+
+          {/* Evidence Viewer Modal */}
+          <EvidenceViewer
+            filename={evidenceViewer.filename}
+            isOpen={evidenceViewer.isOpen}
+            onClose={handleCloseEvidenceViewer}
+          />
         </div>
       </div>
     );
@@ -530,7 +823,7 @@ export default function Directory() {
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Public registry of corruption reports from both anonymous and logged-in users. 
-            Click on any person to view all reports filed against them.
+            Click on any person to view all reports filed against them with evidence files.
           </p>
         </div>
 
@@ -637,8 +930,8 @@ export default function Directory() {
             </p>
             <p className="text-sm text-gray-500 mt-1">
               {minReports === 1 
-                ? 'Click on any person to view all their reports with full details' 
-                : `Click on any defaulter to view all ${minReports}+ reports with full details`
+                ? 'Click on any person to view all their reports with full details and evidence files' 
+                : `Click on any defaulter to view all ${minReports}+ reports with full details and evidence files`
               }
             </p>
           </div>
@@ -713,7 +1006,7 @@ export default function Directory() {
                       <div className="flex-1 text-center">
                         <div className="flex items-center justify-center space-x-1 text-blue-600 font-medium">
                           <Eye className="h-3 w-3" />
-                          <span className="text-xs">Click to View Details</span>
+                          <span className="text-xs">Click to View Details & Evidence</span>
                         </div>
                       </div>
                     </div>
@@ -765,7 +1058,7 @@ export default function Directory() {
                 <p className="text-yellow-700 leading-relaxed">
                   This directory contains corruption reports from our database, 
                   including reports submitted both anonymously and by logged-in users. 
-                  Click on any person to view detailed reports with full descriptions and evidence.
+                  Click on any person to view detailed reports with full descriptions and evidence files.
                   All information is based on user submissions and should be verified independently.
                 </p>
                 <p className="text-yellow-700 leading-relaxed mt-2">

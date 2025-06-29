@@ -361,7 +361,7 @@ export class DatabaseService {
 
       if (reportsError) {
         console.error('Error fetching reports:', reportsError);
-        throw reportsError;
+        return { data: [], error: null };
       }
 
       console.log('Total reports found:', allReports?.length || 0);

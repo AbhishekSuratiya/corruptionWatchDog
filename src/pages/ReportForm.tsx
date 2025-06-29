@@ -40,6 +40,10 @@ export default function ReportForm() {
   } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationCoordinates, setLocationCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   
   const { 
     register, 
@@ -146,38 +150,44 @@ export default function ReportForm() {
 
       const { latitude, longitude } = position.coords;
 
-      // Use reverse geocoding to get location name
+      // Store coordinates for database submission
+      setLocationCoordinates({ latitude, longitude });
+
+      // Use reverse geocoding to get location name for display
       try {
+        // Using a free geocoding service (you can replace with your preferred service)
         const response = await fetch(
-          `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY&language=en&pretty=1`
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
         );
         
         if (response.ok) {
           const data = await response.json();
-          if (data.results && data.results.length > 0) {
-            const result = data.results[0];
-            const components = result.components;
+          if (data && data.address) {
+            const address = data.address;
             
-            // Try to get city, state, or area name
-            const locationName = components.city || 
-                                components.town || 
-                                components.village || 
-                                components.state_district || 
-                                components.state || 
-                                components.county ||
+            // Try to get the most appropriate location name
+            const locationName = address.city || 
+                                address.town || 
+                                address.village || 
+                                address.municipality ||
+                                address.county ||
+                                address.state_district || 
+                                address.state ||
+                                data.display_name?.split(',')[0] ||
                                 'Current Location';
             
             setValue('area_region', locationName, { shouldValidate: true });
           } else {
-            setValue('area_region', `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, { shouldValidate: true });
+            // Fallback to a generic name if geocoding returns no useful data
+            setValue('area_region', 'Current Location', { shouldValidate: true });
           }
         } else {
-          // Fallback to coordinates if geocoding fails
-          setValue('area_region', `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, { shouldValidate: true });
+          // Fallback if geocoding service fails
+          setValue('area_region', 'Current Location', { shouldValidate: true });
         }
       } catch (geocodeError) {
-        console.warn('Geocoding failed, using coordinates:', geocodeError);
-        setValue('area_region', `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, { shouldValidate: true });
+        console.warn('Geocoding failed, using generic location name:', geocodeError);
+        setValue('area_region', 'Current Location', { shouldValidate: true });
       }
 
     } catch (error: any) {
@@ -195,6 +205,7 @@ export default function ReportForm() {
       }
       
       setLocationError(errorMessage);
+      setLocationCoordinates(null);
     } finally {
       setIsGettingLocation(false);
     }
@@ -237,10 +248,14 @@ export default function ReportForm() {
         is_anonymous: data.is_anonymous,
         reporter_name: data.is_anonymous ? undefined : data.reporter_name?.trim(),
         reporter_email: data.is_anonymous ? undefined : data.reporter_email?.trim(),
-        evidence_files: evidenceUrls // Store actual file URLs
+        evidence_files: evidenceUrls, // Store actual file URLs
+        // Include coordinates if available (stored but not displayed to user)
+        latitude: locationCoordinates?.latitude,
+        longitude: locationCoordinates?.longitude
       };
 
       console.log('Submitting report with evidence URLs:', evidenceUrls);
+      console.log('Location coordinates (stored but not shown to user):', locationCoordinates);
 
       // Save to database
       const { data: savedReport, error } = await DatabaseService.createReport(reportData);
@@ -256,6 +271,7 @@ export default function ReportForm() {
       setFiles([]);
       setUploadedFiles([]);
       setSelectedPersonInfo(null);
+      setLocationCoordinates(null);
     } catch (error) {
       console.error('Error submitting report:', error);
       setSubmitError(error instanceof Error ? error.message : 'Failed to submit report. Please try again.');
@@ -299,6 +315,10 @@ export default function ReportForm() {
   const handleLocationChange = (value: string) => {
     setValue('area_region', value, { shouldValidate: true });
     setLocationError(null); // Clear any location errors when manually typing
+    // Clear coordinates when manually typing (only use coordinates from live location)
+    if (locationCoordinates) {
+      setLocationCoordinates(null);
+    }
   };
 
   const handleCorruptPersonChange = (value: string) => {
@@ -620,6 +640,21 @@ export default function ReportForm() {
                     error={errors.area_region?.message}
                     required
                   />
+                  
+                  {/* Location Success Message */}
+                  {locationCoordinates && (
+                    <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm text-green-700 font-medium">Location detected successfully!</p>
+                          <p className="text-xs text-green-600 mt-1">
+                            Your precise coordinates have been saved for verification purposes (not visible to public).
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Location Error */}
                   {locationError && (

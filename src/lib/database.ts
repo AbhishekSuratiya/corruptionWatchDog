@@ -13,7 +13,9 @@ export interface CreateReportData {
   is_anonymous: boolean;
   reporter_name?: string;
   reporter_email?: string;
-  evidence_files?: string[]; // Now stores actual file URLs
+  evidence_files?: string[];
+  latitude?: number; // Optional coordinates for precise location
+  longitude?: number; // Optional coordinates for precise location
 }
 
 export interface HeatMapData {
@@ -36,6 +38,8 @@ export class DatabaseService {
           designation: data.designation,
           address: data.address || null,
           area_region: data.area_region,
+          latitude: data.latitude || null, // Store coordinates if available
+          longitude: data.longitude || null, // Store coordinates if available
           description: data.description,
           category: data.category,
           approached_authorities: data.approached_authorities, // Changed from approached_police

@@ -222,14 +222,23 @@ export default function CorruptPersonAutocomplete({
               : 'border-gray-200 focus:border-red-500 focus:bg-white hover:border-gray-300'
             }
           `}
-          // Disable browser autofill and autocomplete
-          autoComplete="off"
+          // Comprehensive browser autofill prevention
+          autoComplete="new-password"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck="false"
           data-form-type="other"
           data-lpignore="true"
           data-1p-ignore="true"
+          data-bwignore="true"
+          data-dashlane-ignore="true"
+          data-keeper-ignore="true"
+          data-roboform-ignore="true"
+          name={`corrupt-person-${Math.random().toString(36).substring(7)}`}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
         />
         
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
@@ -252,6 +261,7 @@ export default function CorruptPersonAutocomplete({
         <div 
           ref={dropdownRef}
           className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-80 overflow-y-auto animate-fade-in"
+          role="listbox"
         >
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-red-50 to-pink-50">
@@ -285,6 +295,8 @@ export default function CorruptPersonAutocomplete({
                     ${index === highlightedIndex ? 'bg-red-50 border-red-500' : 'hover:border-red-200'}
                   `}
                   onMouseEnter={() => setHighlightedIndex(index)}
+                  role="option"
+                  aria-selected={index === highlightedIndex}
                 >
                   {/* Avatar */}
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md transition-all duration-150 ${

@@ -6,6 +6,7 @@ import {
   Flag, ExternalLink, Settings, UserX, Ban, UserMinus, MoreVertical,
   Phone, Globe, Key, Lock
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../hooks/useAdmin';
 import { AdminDatabaseService, AdminUser, AdminReport, AdminStats } from '../lib/adminDatabase';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
@@ -16,6 +17,7 @@ import SkeletonLoader from '../components/UI/SkeletonLoader';
 import AnimatedCounter from '../components/UI/AnimatedCounter';
 
 export default function Admin() {
+  const navigate = useNavigate();
   const { isAdmin, adminLoading, user } = useAdmin();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'reports'>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
@@ -226,9 +228,8 @@ export default function Admin() {
     }
   };
 
-  const handleViewUser = (userId: string, userEmail: string) => {
-    // Create a simple user profile view instead of opening a new tab
-    alert(`User Profile:\n\nID: ${userId}\nEmail: ${userEmail}\n\nNote: Full user profile page coming soon!`);
+  const handleViewUser = (userId: string) => {
+    navigate(`/admin/user/${userId}`);
   };
 
   // Access control
@@ -572,7 +573,7 @@ export default function Admin() {
                           </div>
                         </div>
                         
-                        {/* User Actions - Responsive */}
+                        {/* User Actions - Icon Only with Tooltips */}
                         <div className="flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
                           {/* Report Count */}
                           <div className="text-center hidden lg:block">
@@ -595,44 +596,59 @@ export default function Admin() {
                             )}
                           </div>
                           
-                          {/* Action Buttons - Icon Only for Tablet */}
+                          {/* Action Buttons - Icon Only with Hover Tooltips */}
                           <div className="flex items-center space-x-1 lg:space-x-2">
                             {/* View Button */}
-                            <button
-                              onClick={() => handleViewUser(user.id, user.email)}
-                              className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                              title="View User"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+                            <div className="relative group">
+                              <button
+                                onClick={() => handleViewUser(user.id)}
+                                className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                View User Details
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                              </div>
+                            </div>
                             
                             {/* Reset Password Button */}
-                            <button
-                              onClick={() => handleResetUserPassword(user.id, user.email)}
-                              disabled={userActionLoading === user.id}
-                              className="p-2 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition-colors disabled:opacity-50"
-                              title="Reset Password"
-                            >
-                              {userActionLoading === user.id ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Key className="w-4 h-4" />
-                              )}
-                            </button>
+                            <div className="relative group">
+                              <button
+                                onClick={() => handleResetUserPassword(user.id, user.email)}
+                                disabled={userActionLoading === user.id}
+                                className="p-2 bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 transition-colors disabled:opacity-50"
+                              >
+                                {userActionLoading === user.id ? (
+                                  <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Key className="w-4 h-4" />
+                                )}
+                              </button>
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                Reset Password
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                              </div>
+                            </div>
                             
                             {/* Delete Button */}
-                            <button
-                              onClick={() => handleDeleteUser(user.id, user.email)}
-                              disabled={userActionLoading === user.id}
-                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
-                              title="Delete User"
-                            >
-                              {userActionLoading === user.id ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </button>
+                            <div className="relative group">
+                              <button
+                                onClick={() => handleDeleteUser(user.id, user.email)}
+                                disabled={userActionLoading === user.id}
+                                className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                              >
+                                {userActionLoading === user.id ? (
+                                  <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                Delete User
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -760,7 +776,7 @@ export default function Admin() {
                           </div>
                         </div>
                         
-                        {/* Report Actions - Icon Only for Tablet */}
+                        {/* Report Actions - Icon Only with Tooltips */}
                         <div className="flex items-center space-x-1 lg:space-x-2 ml-4 flex-shrink-0">
                           <select
                             value={report.status}
@@ -773,20 +789,28 @@ export default function Admin() {
                             <option value="resolved">Resolved</option>
                           </select>
                           
-                          <button
-                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                            title="View Report"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          <div className="relative group">
+                            <button className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                              View Report Details
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </div>
+                          </div>
                           
-                          <button
-                            onClick={() => handleDeleteReport(report.id)}
-                            className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                            title="Delete Report"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="relative group">
+                            <button
+                              onClick={() => handleDeleteReport(report.id)}
+                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                              Delete Report
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -10,6 +10,7 @@ import HeatMap from './pages/HeatMap';
 import About from './pages/About';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import UserDetail from './pages/UserDetail';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,6 +29,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/user/:userId" element={<UserDetail />} />
           </Routes>
         </main>
         <Footer />

@@ -59,11 +59,6 @@ export default function ReportForm() {
   const isAnonymous = watch('is_anonymous');
   const areaRegion = watch('area_region');
 
-  // Initialize file storage on component mount
-  useEffect(() => {
-    FileStorageService.initializeBucket();
-  }, []);
-
   // Auto-fill user details when user is logged in
   useEffect(() => {
     if (user && !authLoading) {

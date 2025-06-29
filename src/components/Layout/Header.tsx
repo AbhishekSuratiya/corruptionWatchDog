@@ -111,36 +111,40 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
               })}
             </nav>
 
-            {/* Tablet Navigation - Condensed with icons and text */}
+            {/* Enhanced Tablet Navigation - Show ALL navigation items */}
             <nav className="hidden md:flex lg:hidden items-center space-x-1">
-              {navigation.slice(0, 4).map((item) => {
+              {navigation.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
                 
                 return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      active
-                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="hidden xl:inline">{item.shortName}</span>
-                  </Link>
+                  <div key={item.name} className="relative group">
+                    <Link
+                      to={item.href}
+                      className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                        active
+                          ? item.href === '/admin'
+                            ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25'
+                            : 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25'
+                          : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      
+                      {/* Active indicator */}
+                      {active && (
+                        <div className="absolute -bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                      )}
+                    </Link>
+                    
+                    {/* Tooltip for tablet */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      {item.shortName}
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    </div>
+                  </div>
                 );
               })}
-              
-              {/* More button for remaining items */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-300"
-              >
-                <Menu className="h-4 w-4" />
-                <span className="hidden xl:inline">More</span>
-              </button>
             </nav>
 
             {/* Auth Section - Clean and compact */}

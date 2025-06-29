@@ -123,19 +123,57 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Hero Section - Static Content */}
+      {/* Hero Section with Beautiful Background */}
       <section className="relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
+        {/* Modern Background with Geometric Patterns */}
+        <div className="absolute inset-0">
+          {/* Base gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900"></div>
+          
+          {/* Geometric overlay pattern */}
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0 bg-repeat" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              animation: 'pulse 4s ease-in-out infinite'
-            }}></div>
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs>
+                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+                </pattern>
+                <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <circle cx="10" cy="10" r="1.5" fill="white" opacity="0.3"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)"/>
+              <rect width="100%" height="100%" fill="url(#dots)"/>
+            </svg>
           </div>
-          <div className="absolute top-0 left-0 w-full h-full">
-            <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/20 rounded-full blur-3xl animate-float"></div>
-            <div className="absolute bottom-20 right-20 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float-delayed"></div>
+          
+          {/* Floating geometric shapes */}
+          <div className="absolute inset-0">
+            {/* Large circle - top right */}
+            <div className="absolute top-10 right-10 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full blur-3xl animate-float"></div>
+            
+            {/* Medium circle - bottom left */}
+            <div className="absolute bottom-20 left-20 w-72 h-72 bg-gradient-to-br from-pink-500/20 to-red-500/20 rounded-full blur-3xl animate-float-delayed"></div>
+            
+            {/* Small circles scattered */}
+            <div className="absolute top-1/3 left-1/4 w-32 h-32 bg-gradient-to-br from-blue-400/30 to-purple-500/30 rounded-full blur-2xl animate-float"></div>
+            <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-gradient-to-br from-green-400/20 to-teal-500/20 rounded-full blur-2xl animate-float-delayed"></div>
+          </div>
+          
+          {/* Subtle texture overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+          
+          {/* Justice/Legal themed elements */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-1/4 left-1/4 transform -rotate-12">
+              <svg width="200" height="200" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <div className="absolute bottom-1/4 right-1/4 transform rotate-12">
+              <svg width="150" height="150" viewBox="0 0 24 24" fill="white">
+                <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1Z"/>
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -144,7 +182,7 @@ export default function Home() {
             <div className="flex justify-center mb-8 animate-fade-in">
               <div className="relative group">
                 <div className="absolute inset-0 bg-yellow-400 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300 animate-pulse"></div>
-                <div className="relative p-6 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                <div className="relative p-6 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 shadow-2xl">
                   <Shield className="h-16 w-16 text-white drop-shadow-lg" />
                   <AlertTriangle className="h-6 w-6 text-yellow-400 absolute -top-1 -right-1 animate-bounce" />
                 </div>
@@ -322,16 +360,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section - Static Content */}
+      {/* CTA Section with Beautiful Background */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900">
+        <div className="absolute inset-0">
+          {/* Modern gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900"></div>
+          
+          {/* Geometric pattern overlay */}
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0 bg-repeat" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M20 20c0-11.046-8.954-20-20-20v20h20z'/%3E%3C/g%3E%3C/svg%3E")`
-            }}></div>
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs>
+                <pattern id="hexagons" width="28" height="24" patternUnits="userSpaceOnUse">
+                  <polygon points="14,2 26,9 26,21 14,28 2,21 2,9" fill="none" stroke="white" strokeWidth="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#hexagons)"/>
+            </svg>
           </div>
+          
+          {/* Floating elements */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float"></div>
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-yellow-500/20 rounded-full blur-3xl animate-float-delayed"></div>
+          
+          {/* Justice scales silhouette */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <svg width="300" height="300" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7V9C15 10.1 15.9 11 17 11S19 10.1 19 11H21ZM9 7V9C9 10.1 8.1 11 7 11S5 10.1 5 11H3V9L9 7ZM12 7.5C11.2 7.5 10.5 8.2 10.5 9S11.2 10.5 12 10.5 13.5 9.8 13.5 9 12.8 7.5 12 7.5Z"/>
+              </svg>
+            </div>
+          </div>
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

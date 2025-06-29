@@ -124,6 +124,8 @@ export default function Directory() {
         throw new Error(error.message || 'Failed to fetch detailed reports');
       }
 
+      console.log('Detailed reports data:', data);
+
       if (data) {
         setDetailedReports(data as DetailedReport[]);
       } else {
@@ -138,12 +140,20 @@ export default function Directory() {
     }
   };
 
-  const handleDefaulterClick = (personName: string) => {
+  const handleDefaulterClick = (personName: string, event?: React.MouseEvent) => {
+    // Prevent event bubbling if needed
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    console.log('Clicking on defaulter:', personName);
     setSelectedDefaulter(personName);
     fetchDetailedReports(personName);
   };
 
   const handleCloseDetails = () => {
+    console.log('Closing details view');
     setSelectedDefaulter(null);
     setDetailedReports([]);
     setDetailsError(null);
@@ -209,6 +219,14 @@ export default function Directory() {
       return <FileText className="h-4 w-4" />;
     }
   };
+
+  // Debug: Log current state
+  console.log('Current state:', {
+    selectedDefaulter,
+    detailedReports: detailedReports.length,
+    loadingDetails,
+    detailsError
+  });
 
   // If detailed view is open, show it
   if (selectedDefaulter) {
@@ -635,71 +653,73 @@ export default function Directory() {
             ))
           ) : filteredDefaulters.length > 0 ? (
             filteredDefaulters.map((defaulter, index) => (
-              <FloatingCard 
+              <div
                 key={`${defaulter.corrupt_person_name}-${defaulter.designation}-${index}`}
-                delay={index * 100}
-                className="overflow-hidden group cursor-pointer"
-                onClick={() => handleDefaulterClick(defaulter.corrupt_person_name)}
+                onClick={(e) => handleDefaulterClick(defaulter.corrupt_person_name, e)}
+                className="cursor-pointer transform transition-all duration-300 hover:scale-105"
               >
-                {/* Header with Badge */}
-                <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
-                  <div className="absolute top-4 right-4">
-                    <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.report_count)}`}>
-                      {defaulter.report_count} Report{defaulter.report_count !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  
-                  <div className="pr-24">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors duration-300">
-                      {defaulter.corrupt_person_name}
-                    </h3>
-                    <p className="text-gray-600 font-medium mb-2">
-                      {defaulter.designation}
-                    </p>
-                    <div className="flex items-center text-gray-500 text-sm mb-4">
-                      <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                      {defaulter.area_region}
-                    </div>
-
-                    {/* Status Badge */}
-                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(defaulter.status)}`}>
-                      {getStatusLabel(defaulter.status)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Categories */}
-                <div className="px-6 pb-4">
-                  <div className="flex flex-wrap gap-2">
-                    {defaulter.categories.map((category) => (
-                      <span key={category} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg border hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200">
-                        {CORRUPTION_CATEGORIES[category as keyof typeof CORRUPTION_CATEGORIES] || category}
+                <FloatingCard 
+                  delay={index * 100}
+                  className="overflow-hidden group h-full"
+                >
+                  {/* Header with Badge */}
+                  <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
+                    <div className="absolute top-4 right-4">
+                      <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.report_count)}`}>
+                        {defaulter.report_count} Report{defaulter.report_count !== 1 ? 's' : ''}
                       </span>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                    
+                    <div className="pr-24">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors duration-300">
+                        {defaulter.corrupt_person_name}
+                      </h3>
+                      <p className="text-gray-600 font-medium mb-2">
+                        {defaulter.designation}
+                      </p>
+                      <div className="flex items-center text-gray-500 text-sm mb-4">
+                        <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                        {defaulter.area_region}
+                      </div>
 
-                {/* Footer */}
-                <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-red-500" />
-                      Last reported: {new Date(defaulter.latest_report_date).toLocaleDateString()}
+                      {/* Status Badge */}
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(defaulter.status)}`}>
+                        {getStatusLabel(defaulter.status)}
+                      </span>
                     </div>
                   </div>
-                  
-                  <div className="flex space-x-3">
-                    <GradientButton size="sm" className="flex-1 text-xs">
-                      <Eye className="h-3 w-3" />
-                      <span>View All Reports</span>
-                    </GradientButton>
-                    <GradientButton variant="secondary" size="sm" className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
-                      <ExternalLink className="h-3 w-3" />
-                      <span>Report to Authorities</span>
-                    </GradientButton>
+
+                  {/* Categories */}
+                  <div className="px-6 pb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {defaulter.categories.map((category) => (
+                        <span key={category} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg border hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all duration-200">
+                          {CORRUPTION_CATEGORIES[category as keyof typeof CORRUPTION_CATEGORIES] || category}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </FloatingCard>
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-red-500" />
+                        Last reported: {new Date(defaulter.latest_report_date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-3">
+                      <div className="flex-1 text-center">
+                        <div className="flex items-center justify-center space-x-1 text-blue-600 font-medium">
+                          <Eye className="h-3 w-3" />
+                          <span className="text-xs">Click to View Details</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </FloatingCard>
+              </div>
             ))
           ) : !error ? (
             // No Results - Show only when not loading and no results

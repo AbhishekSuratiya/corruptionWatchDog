@@ -41,28 +41,28 @@ export default function UserMenu({ user }: UserMenuProps) {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* User Button - Fixed layout with proper text visibility */}
+      {/* User Button - Fixed with proper contrast */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-all duration-300 group"
+        className="flex items-center space-x-3 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300 group max-w-xs"
       >
         {/* Avatar - Fixed size */}
-        <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center text-black font-bold text-sm shadow-lg flex-shrink-0">
+        <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0">
           {getUserInitials()}
         </div>
         
-        {/* User Info - Visible on medium screens and up */}
-        <div className="hidden md:flex flex-col text-left min-w-0">
-          <div className="text-sm font-medium text-white leading-tight max-w-[150px] truncate">
+        {/* User Info - Always visible with proper colors */}
+        <div className="flex flex-col text-left min-w-0 flex-1">
+          <div className="text-sm font-semibold text-gray-900 leading-tight truncate">
             {getUserDisplayName()}
           </div>
-          <div className="text-xs text-white/80 leading-tight max-w-[150px] truncate">
+          <div className="text-xs text-gray-600 leading-tight truncate">
             {user?.email}
           </div>
         </div>
         
-        {/* Chevron - Fixed size */}
-        <ChevronDown className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 text-white/80 ${isOpen ? 'rotate-180' : ''}`} />
+        {/* Chevron - Fixed size with proper color */}
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 text-gray-600 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
@@ -81,7 +81,7 @@ export default function UserMenu({ user }: UserMenuProps) {
                 <div className="font-semibold text-gray-900 break-words leading-tight">
                   {getUserDisplayName()}
                 </div>
-                <div className="text-sm text-gray-500 break-all leading-relaxed mt-1">
+                <div className="text-sm text-gray-600 break-all leading-relaxed mt-1">
                   {user?.email}
                 </div>
                 {/* User status indicator */}

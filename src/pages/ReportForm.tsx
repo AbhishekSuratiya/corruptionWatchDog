@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Shield, Upload, AlertCircle, CheckCircle, Loader2, User, Mail, X, FileText, Image, Video, Info } from 'lucide-react';
+import { Shield, Upload, AlertCircle, CheckCircle, Loader2, User, Mail, X, FileText, Image, Video, Info, MapPin, Navigation } from 'lucide-react';
 import Button from '../components/UI/Button';
 import LocationAutocomplete from '../components/UI/LocationAutocomplete';
 import CorruptPersonAutocomplete from '../components/UI/CorruptPersonAutocomplete';
@@ -38,6 +38,8 @@ export default function ReportForm() {
     area: string;
     reportCount: number;
   } | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   
   const { 
     register, 
@@ -117,6 +119,84 @@ export default function ReportForm() {
     }
     if (!watch('area_region')) {
       setValue('area_region', person.area);
+    }
+  };
+
+  // Get user's current location
+  const getCurrentLocation = async () => {
+    setIsGettingLocation(true);
+    setLocationError(null);
+
+    try {
+      if (!navigator.geolocation) {
+        throw new Error('Geolocation is not supported by this browser');
+      }
+
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5 minutes
+          }
+        );
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Use reverse geocoding to get location name
+      try {
+        const response = await fetch(
+          `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY&language=en&pretty=1`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.results && data.results.length > 0) {
+            const result = data.results[0];
+            const components = result.components;
+            
+            // Try to get city, state, or area name
+            const locationName = components.city || 
+                                components.town || 
+                                components.village || 
+                                components.state_district || 
+                                components.state || 
+                                components.county ||
+                                'Current Location';
+            
+            setValue('area_region', locationName, { shouldValidate: true });
+          } else {
+            setValue('area_region', `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, { shouldValidate: true });
+          }
+        } else {
+          // Fallback to coordinates if geocoding fails
+          setValue('area_region', `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, { shouldValidate: true });
+        }
+      } catch (geocodeError) {
+        console.warn('Geocoding failed, using coordinates:', geocodeError);
+        setValue('area_region', `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`, { shouldValidate: true });
+      }
+
+    } catch (error: any) {
+      console.error('Error getting location:', error);
+      
+      let errorMessage = 'Unable to get your location. ';
+      if (error.code === 1) {
+        errorMessage += 'Location access was denied. Please enable location services and try again.';
+      } else if (error.code === 2) {
+        errorMessage += 'Location information is unavailable.';
+      } else if (error.code === 3) {
+        errorMessage += 'Location request timed out.';
+      } else {
+        errorMessage += 'Please enter your location manually.';
+      }
+      
+      setLocationError(errorMessage);
+    } finally {
+      setIsGettingLocation(false);
     }
   };
 
@@ -218,6 +298,7 @@ export default function ReportForm() {
 
   const handleLocationChange = (value: string) => {
     setValue('area_region', value, { shouldValidate: true });
+    setLocationError(null); // Clear any location errors when manually typing
   };
 
   const handleCorruptPersonChange = (value: string) => {
@@ -471,6 +552,19 @@ export default function ReportForm() {
                   {...register('address')}
                   className="block w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 placeholder-gray-400 transform hover:scale-[1.02] focus:scale-[1.02]"
                   placeholder="Enter address or workplace"
+                  // Comprehensive browser autofill prevention for address
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
+                  data-dashlane-ignore="true"
+                  data-keeper-ignore="true"
+                  data-roboform-ignore="true"
+                  name={`address-${Math.random().toString(36).substring(7)}`}
                 />
                 <p className="text-sm text-gray-500 mt-2">This helps us verify the report</p>
               </div>
@@ -485,14 +579,58 @@ export default function ReportForm() {
               {/* Second Row: Area/Region and Category - Properly Aligned */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Area/Region *
+                      {selectedPersonInfo && (
+                        <span className="text-green-600 ml-2 text-xs">(Auto-filled from previous report)</span>
+                      )}
+                    </label>
+                    
+                    {/* Live Location Button */}
+                    <button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={isGettingLocation}
+                      className={`flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${
+                        isGettingLocation
+                          ? 'bg-blue-100 text-blue-600 cursor-not-allowed'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-105'
+                      }`}
+                      title="Use your current location"
+                    >
+                      {isGettingLocation ? (
+                        <>
+                          <div className="animate-spin h-3 w-3 border border-blue-600 border-t-transparent rounded-full"></div>
+                          <span>Getting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="h-3 w-3" />
+                          <span>Use Live Location</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
                   <LocationAutocomplete
-                    label="Area/Region"
                     value={areaRegion}
                     onChange={handleLocationChange}
                     placeholder="Start typing city or state name..."
                     error={errors.area_region?.message}
                     required
                   />
+                  
+                  {/* Location Error */}
+                  {locationError && (
+                    <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-orange-700">{locationError}</p>
+                      </div>
+                    </div>
+                  )}
+                  
                   {selectedPersonInfo && (
                     <p className="text-xs text-green-600">
                       Auto-filled from previous report: {selectedPersonInfo.area}

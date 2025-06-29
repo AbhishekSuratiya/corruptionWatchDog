@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter } from 'lucide-react';
+import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter, RefreshCw } from 'lucide-react';
 import GradientButton from '../components/UI/GradientButton';
 import ModernInput from '../components/UI/ModernInput';
 import FloatingCard from '../components/UI/FloatingCard';
@@ -23,6 +23,7 @@ export default function Directory() {
   const [isLoading, setIsLoading] = useState(true);
   const [defaulters, setDefaulters] = useState<DefaulterProfile[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   useEffect(() => {
     fetchDefaulters();
@@ -33,11 +34,16 @@ export default function Directory() {
       setIsLoading(true);
       setError(null);
       
+      console.log('Fetching defaulters from database...');
+      
       const { data, error } = await DatabaseService.getDefaulters(2); // Minimum 2 reports to be considered a defaulter
       
       if (error) {
+        console.error('Database error:', error);
         throw new Error(error.message || 'Failed to fetch defaulters');
       }
+
+      console.log('Raw defaulters data:', data);
 
       if (data) {
         // Transform the data to match our interface
@@ -46,15 +52,18 @@ export default function Directory() {
           designation: item.designation,
           area_region: item.area_region,
           report_count: Number(item.report_count),
-          latest_report_date: item.latest_report_date,
-          categories: item.categories || [],
-          status: item.status === 'critical' ? 'active' : 
-                  item.status === 'high' ? 'active' : 
-                  item.status === 'medium' ? 'disputed' : 'resolved'
+          latest_report_date: typeof item.latest_report_date === 'string' 
+            ? item.latest_report_date 
+            : new Date(item.latest_report_date).toISOString(),
+          categories: Array.isArray(item.categories) ? item.categories : [],
+          status: item.status || 'low'
         }));
         
+        console.log('Transformed defaulters data:', transformedData);
         setDefaulters(transformedData);
+        setLastRefresh(new Date());
       } else {
+        console.log('No defaulters data returned');
         setDefaulters([]);
       }
     } catch (err) {
@@ -78,9 +87,10 @@ export default function Directory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-red-100 text-red-800 border-red-200';
-      case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'disputed': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -88,7 +98,8 @@ export default function Directory() {
   const getBadgeColor = (count: number) => {
     if (count >= 20) return 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25';
     if (count >= 10) return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25';
-    return 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25';
+    if (count >= 5) return 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25';
+    return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25';
   };
 
   return (
@@ -109,7 +120,7 @@ export default function Directory() {
             <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> Directory</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Public registry of individuals with multiple corruption reports. 
+            Public registry of individuals with multiple corruption reports from both anonymous and logged-in users. 
             Help your community stay informed and vigilant.
           </p>
         </div>
@@ -140,15 +151,19 @@ export default function Directory() {
             </div>
           </div>
           
-          {/* Refresh Button */}
-          <div className="mt-4 flex justify-end">
+          {/* Refresh Button and Last Updated */}
+          <div className="mt-6 flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              Last updated: {lastRefresh.toLocaleString()}
+            </div>
             <GradientButton 
               onClick={fetchDefaulters} 
               size="sm"
               disabled={isLoading}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
-              {isLoading ? 'Refreshing...' : 'Refresh Data'}
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Refreshing...' : 'Refresh Data'}</span>
             </GradientButton>
           </div>
         </FloatingCard>
@@ -185,6 +200,9 @@ export default function Directory() {
                   (Total: {defaulters.length} in database)
                 </span>
               )}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Includes reports from both anonymous and logged-in users
             </p>
           </div>
         )}
@@ -225,7 +243,7 @@ export default function Directory() {
 
                     {/* Status Badge */}
                     <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(defaulter.status)}`}>
-                      {defaulter.status.charAt(0).toUpperCase() + defaulter.status.slice(1)}
+                      {defaulter.status.charAt(0).toUpperCase() + defaulter.status.slice(1)} Risk
                     </span>
                   </div>
                 </div>
@@ -277,7 +295,7 @@ export default function Directory() {
                 </h3>
                 <p className="text-gray-500 mb-6">
                   {defaulters.length === 0 
-                    ? 'No individuals with multiple corruption reports have been found in the database yet.'
+                    ? 'No individuals with multiple corruption reports have been found in the database yet. This includes both anonymous and logged-in user reports.'
                     : 'Try adjusting your search criteria or browse all categories.'
                   }
                 </p>
@@ -303,12 +321,14 @@ export default function Directory() {
                   Important Notice
                 </h3>
                 <p className="text-yellow-700 leading-relaxed">
-                  This directory contains individuals with multiple corruption reports from our database. 
+                  This directory contains individuals with multiple corruption reports from our database, 
+                  including reports submitted both anonymously and by logged-in users. 
                   All information is based on user submissions and should be verified independently. 
                   If you believe any information is incorrect, you can file a dispute through our claim system.
                 </p>
                 <p className="text-yellow-700 leading-relaxed mt-2">
-                  <strong>Data Source:</strong> Real-time data from Supabase database. Last updated: {new Date().toLocaleString()}
+                  <strong>Data Source:</strong> Real-time data from Supabase database aggregating all corruption reports. 
+                  Last updated: {lastRefresh.toLocaleString()}
                 </p>
               </div>
             </div>

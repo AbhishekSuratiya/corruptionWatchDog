@@ -336,7 +336,7 @@ export class DatabaseService {
     }
   }
 
-  // Get defaulters (people with multiple reports)
+  // Get defaulters (people with multiple reports) - IMPROVED VERSION
   static async getDefaulters(minReports: number = 2): Promise<{
     data: Array<{
       corrupt_person_name: string;
@@ -350,12 +350,96 @@ export class DatabaseService {
     error: any;
   }> {
     try {
-      const { data, error } = await supabase
+      console.log('Fetching defaulters with minimum reports:', minReports);
+      
+      // First, let's check if we have any reports at all
+      const { data: allReports, error: reportsError } = await supabase
+        .from('corruption_reports')
+        .select('corrupt_person_name, designation, area_region, category, created_at')
+        .not('corrupt_person_name', 'is', null)
+        .neq('corrupt_person_name', '');
+
+      if (reportsError) {
+        console.error('Error fetching reports:', reportsError);
+        throw reportsError;
+      }
+
+      console.log('Total reports found:', allReports?.length || 0);
+      
+      if (!allReports || allReports.length === 0) {
+        console.log('No reports found in database');
+        return { data: [], error: null };
+      }
+
+      // Try the database function first
+      const { data: functionResult, error: functionError } = await supabase
         .rpc('get_defaulters', { min_reports: minReports });
 
-      return { data, error };
+      if (functionError) {
+        console.warn('Database function failed, falling back to manual aggregation:', functionError);
+        
+        // Manual aggregation as fallback
+        const personMap = new Map<string, {
+          designation: string;
+          area_region: string;
+          reports: any[];
+          categories: Set<string>;
+        }>();
+
+        allReports.forEach(report => {
+          const personKey = report.corrupt_person_name.toLowerCase().trim();
+          
+          if (!personMap.has(personKey)) {
+            personMap.set(personKey, {
+              designation: report.designation,
+              area_region: report.area_region,
+              reports: [],
+              categories: new Set()
+            });
+          }
+          
+          const person = personMap.get(personKey)!;
+          person.reports.push(report);
+          person.categories.add(report.category);
+          
+          // Update with most recent info
+          if (new Date(report.created_at) > new Date(person.reports[0]?.created_at || '1970-01-01')) {
+            person.designation = report.designation;
+            person.area_region = report.area_region;
+          }
+        });
+
+        // Filter and format results
+        const manualResults = Array.from(personMap.entries())
+          .filter(([_, person]) => person.reports.length >= minReports)
+          .map(([personName, person]) => {
+            const reportCount = person.reports.length;
+            let status = 'low';
+            if (reportCount >= 20) status = 'critical';
+            else if (reportCount >= 10) status = 'high';
+            else if (reportCount >= 5) status = 'medium';
+
+            return {
+              corrupt_person_name: personName,
+              designation: person.designation,
+              area_region: person.area_region,
+              report_count: reportCount,
+              latest_report_date: Math.max(...person.reports.map(r => new Date(r.created_at).getTime())),
+              categories: Array.from(person.categories),
+              status
+            };
+          })
+          .sort((a, b) => b.report_count - a.report_count);
+
+        console.log('Manual aggregation results:', manualResults.length);
+        return { data: manualResults, error: null };
+      }
+
+      console.log('Database function results:', functionResult?.length || 0);
+      return { data: functionResult || [], error: null };
+
     } catch (error) {
-      console.error('Error fetching defaulters:', error);
+      console.error('Error in getDefaulters:', error);
       return { data: null, error };
     }
   }

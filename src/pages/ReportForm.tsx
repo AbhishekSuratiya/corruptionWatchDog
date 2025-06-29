@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Shield, Upload, MapPin, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Shield, Upload, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import Button from '../components/UI/Button';
+import LocationAutocomplete from '../components/UI/LocationAutocomplete';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 import { DatabaseService } from '../lib/database';
 
@@ -29,6 +30,7 @@ export default function ReportForm() {
     register, 
     handleSubmit, 
     watch, 
+    setValue,
     formState: { errors }, 
     reset
   } = useForm<ReportFormData>({
@@ -49,6 +51,7 @@ export default function ReportForm() {
   });
   
   const isAnonymous = watch('is_anonymous');
+  const areaRegion = watch('area_region');
 
   const categoryOptions = Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => ({
     value: key,
@@ -68,7 +71,7 @@ export default function ReportForm() {
         area_region: data.area_region.trim(),
         description: data.description.trim(),
         category: data.category,
-        approached_authorities: data.approached_authorities === 'yes', // Changed from approached_police
+        approached_authorities: data.approached_authorities === 'yes',
         was_resolved: data.was_resolved === 'yes',
         is_anonymous: data.is_anonymous,
         reporter_name: data.is_anonymous ? undefined : data.reporter_name?.trim(),
@@ -100,6 +103,10 @@ export default function ReportForm() {
     if (e.target.files) {
       setFiles(Array.from(e.target.files));
     }
+  };
+
+  const handleLocationChange = (value: string) => {
+    setValue('area_region', value, { shouldValidate: true });
   };
 
   if (isSubmitted) {
@@ -276,13 +283,18 @@ export default function ReportForm() {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="relative">
-                  <label htmlFor="area_region" className="block text-sm font-medium text-gray-700 mb-1">
-                    Area/Region *
-                  </label>
+                <div>
+                  <LocationAutocomplete
+                    label="Area/Region"
+                    value={areaRegion}
+                    onChange={handleLocationChange}
+                    placeholder="Start typing city or state name..."
+                    error={errors.area_region?.message}
+                    required
+                  />
+                  {/* Hidden input for form validation */}
                   <input
-                    type="text"
-                    id="area_region"
+                    type="hidden"
                     {...register('area_region', { 
                       required: 'Area/Region is required',
                       minLength: {
@@ -296,13 +308,7 @@ export default function ReportForm() {
                         return true;
                       }
                     })}
-                    className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                    placeholder="Enter location where corruption occurred"
                   />
-                  <MapPin className="absolute right-3 top-8 h-5 w-5 text-gray-400" />
-                  {errors.area_region && (
-                    <p className="text-sm text-red-600 mt-1">{errors.area_region.message}</p>
-                  )}
                 </div>
                 
                 <div>

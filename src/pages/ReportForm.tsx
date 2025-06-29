@@ -68,7 +68,7 @@ export default function ReportForm() {
         area_region: data.area_region.trim(),
         description: data.description.trim(),
         category: data.category,
-        approached_police: data.approached_authorities === 'yes', // Keep database field name for compatibility
+        approached_authorities: data.approached_authorities === 'yes', // Changed from approached_police
         was_resolved: data.was_resolved === 'yes',
         is_anonymous: data.is_anonymous,
         reporter_name: data.is_anonymous ? undefined : data.reporter_name?.trim(),
@@ -395,7 +395,7 @@ export default function ReportForm() {
                     <p className="text-sm text-red-600 mt-1">{errors.approached_authorities.message}</p>
                   )}
                   <p className="text-sm text-gray-500 mt-2">
-                    This includes police, supervisors, anti-corruption agencies, or any higher authority
+                    This includes law enforcement, supervisors, anti-corruption agencies, or any higher authority
                   </p>
                 </div>
 

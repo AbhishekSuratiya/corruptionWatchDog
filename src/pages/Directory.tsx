@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter, RefreshCw } from 'lucide-react';
+import { Search, AlertTriangle, MapPin, Calendar, Flag, ExternalLink, Filter, RefreshCw, Eye } from 'lucide-react';
 import GradientButton from '../components/UI/GradientButton';
 import ModernInput from '../components/UI/ModernInput';
 import FloatingCard from '../components/UI/FloatingCard';
@@ -24,10 +24,12 @@ export default function Directory() {
   const [defaulters, setDefaulters] = useState<DefaulterProfile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [showAllReports, setShowAllReports] = useState(false);
+  const [minReports, setMinReports] = useState(2);
 
   useEffect(() => {
     fetchDefaulters();
-  }, []);
+  }, [minReports]);
 
   const fetchDefaulters = async () => {
     try {
@@ -36,7 +38,15 @@ export default function Directory() {
       
       console.log('Fetching defaulters from database...');
       
-      const { data, error } = await DatabaseService.getDefaulters(2); // Minimum 2 reports to be considered a defaulter
+      let data, error;
+      
+      if (showAllReports) {
+        // Show all reports including single ones
+        ({ data, error } = await DatabaseService.getAllReportsGrouped());
+      } else {
+        // Show only defaulters (multiple reports)
+        ({ data, error } = await DatabaseService.getDefaulters(minReports));
+      }
       
       if (error) {
         console.error('Database error:', error);
@@ -91,6 +101,7 @@ export default function Directory() {
       case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      case 'single': return 'bg-blue-100 text-blue-800 border-blue-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -99,7 +110,19 @@ export default function Directory() {
     if (count >= 20) return 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/25';
     if (count >= 10) return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25';
     if (count >= 5) return 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25';
-    return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25';
+    if (count >= 2) return 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25';
+    return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-lg shadow-gray-500/25';
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'critical': return 'Critical Risk';
+      case 'high': return 'High Risk';
+      case 'medium': return 'Medium Risk';
+      case 'low': return 'Low Risk';
+      case 'single': return 'Single Report';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
   };
 
   return (
@@ -116,11 +139,11 @@ export default function Directory() {
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Defaulter 
+            Corruption 
             <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> Directory</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Public registry of individuals with multiple corruption reports from both anonymous and logged-in users. 
+            Public registry of corruption reports from both anonymous and logged-in users. 
             Help your community stay informed and vigilant.
           </p>
         </div>
@@ -128,7 +151,7 @@ export default function Directory() {
         {/* Search and Filters - Static Content */}
         <FloatingCard className="p-8 mb-8 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <ModernInput
                 placeholder="Search by name, designation, or location..."
                 value={searchTerm}
@@ -149,12 +172,37 @@ export default function Directory() {
               </select>
               <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
             </div>
+            <div className="relative">
+              <select
+                value={minReports}
+                onChange={(e) => setMinReports(Number(e.target.value))}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 appearance-none"
+              >
+                <option value={1}>All Reports (1+)</option>
+                <option value={2}>Defaulters (2+)</option>
+                <option value={3}>Frequent (3+)</option>
+                <option value={5}>High Risk (5+)</option>
+                <option value={10}>Critical (10+)</option>
+              </select>
+            </div>
           </div>
           
-          {/* Refresh Button and Last Updated */}
+          {/* View Toggle and Refresh Button */}
           <div className="mt-6 flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              Last updated: {lastRefresh.toLocaleString()}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                Last updated: {lastRefresh.toLocaleString()}
+              </div>
+              <button
+                onClick={() => {
+                  setShowAllReports(!showAllReports);
+                  setMinReports(showAllReports ? 2 : 1);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span>{showAllReports ? 'Show Defaulters Only' : 'Show All Reports'}</span>
+              </button>
             </div>
             <GradientButton 
               onClick={fetchDefaulters} 
@@ -193,7 +241,7 @@ export default function Directory() {
         {!isLoading && !error && (
           <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
             <p className="text-gray-600 text-lg">
-              Showing <span className="font-semibold text-red-600">{filteredDefaulters.length}</span> defaulter{filteredDefaulters.length !== 1 ? 's' : ''}
+              Showing <span className="font-semibold text-red-600">{filteredDefaulters.length}</span> {minReports === 1 ? 'report' : 'defaulter'}{filteredDefaulters.length !== 1 ? 's' : ''}
               {searchTerm && ` matching "${searchTerm}"`}
               {defaulters.length > 0 && (
                 <span className="text-sm text-gray-500 ml-2">
@@ -202,7 +250,10 @@ export default function Directory() {
               )}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              Includes reports from both anonymous and logged-in users
+              {minReports === 1 
+                ? 'Showing all corruption reports including single reports' 
+                : `Showing individuals with ${minReports}+ reports (repeat offenders)`
+              }
             </p>
           </div>
         )}
@@ -225,7 +276,7 @@ export default function Directory() {
                 <div className="relative p-6 pb-4 bg-gradient-to-br from-white to-gray-50">
                   <div className="absolute top-4 right-4">
                     <span className={`px-4 py-2 rounded-full text-sm font-bold transform transition-all duration-300 group-hover:scale-110 ${getBadgeColor(defaulter.report_count)}`}>
-                      {defaulter.report_count} Reports
+                      {defaulter.report_count} Report{defaulter.report_count !== 1 ? 's' : ''}
                     </span>
                   </div>
                   
@@ -243,7 +294,7 @@ export default function Directory() {
 
                     {/* Status Badge */}
                     <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(defaulter.status)}`}>
-                      {defaulter.status.charAt(0).toUpperCase() + defaulter.status.slice(1)} Risk
+                      {getStatusLabel(defaulter.status)}
                     </span>
                   </div>
                 </div>
@@ -275,7 +326,7 @@ export default function Directory() {
                     </GradientButton>
                     <GradientButton variant="secondary" size="sm" className="flex-1 text-xs bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">
                       <ExternalLink className="h-3 w-3" />
-                      <span>Report to Police</span>
+                      <span>Report to Authorities</span>
                     </GradientButton>
                   </div>
                 </div>
@@ -291,11 +342,13 @@ export default function Directory() {
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {defaulters.length === 0 ? 'No defaulters found' : 'No matching defaulters'}
+                  {defaulters.length === 0 ? `No ${minReports === 1 ? 'reports' : 'defaulters'} found` : `No matching ${minReports === 1 ? 'reports' : 'defaulters'}`}
                 </h3>
                 <p className="text-gray-500 mb-6">
                   {defaulters.length === 0 
-                    ? 'No individuals with multiple corruption reports have been found in the database yet. This includes both anonymous and logged-in user reports.'
+                    ? minReports === 1 
+                      ? 'No corruption reports have been found in the database yet.'
+                      : `No individuals with ${minReports}+ corruption reports have been found in the database yet.`
                     : 'Try adjusting your search criteria or browse all categories.'
                   }
                 </p>
@@ -321,7 +374,7 @@ export default function Directory() {
                   Important Notice
                 </h3>
                 <p className="text-yellow-700 leading-relaxed">
-                  This directory contains individuals with multiple corruption reports from our database, 
+                  This directory contains corruption reports from our database, 
                   including reports submitted both anonymously and by logged-in users. 
                   All information is based on user submissions and should be verified independently. 
                   If you believe any information is incorrect, you can file a dispute through our claim system.
@@ -329,6 +382,12 @@ export default function Directory() {
                 <p className="text-yellow-700 leading-relaxed mt-2">
                   <strong>Data Source:</strong> Real-time data from Supabase database aggregating all corruption reports. 
                   Last updated: {lastRefresh.toLocaleString()}
+                </p>
+                <p className="text-yellow-700 leading-relaxed mt-2">
+                  <strong>Note:</strong> {minReports === 1 
+                    ? 'Currently showing all reports including single reports.' 
+                    : `Currently showing only individuals with ${minReports}+ reports (repeat offenders).`
+                  }
                 </p>
               </div>
             </div>

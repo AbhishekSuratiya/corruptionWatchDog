@@ -8,7 +8,7 @@ export interface CreateReportData {
   area_region: string;
   description: string;
   category: string;
-  approached_police: boolean;
+  approached_authorities: boolean; // Changed from approached_police
   was_resolved: boolean;
   is_anonymous: boolean;
   reporter_name?: string;
@@ -38,7 +38,7 @@ export class DatabaseService {
           area_region: data.area_region,
           description: data.description,
           category: data.category,
-          approached_police: data.approached_police,
+          approached_authorities: data.approached_authorities, // Changed from approached_police
           was_resolved: data.was_resolved,
           is_anonymous: data.is_anonymous,
           reporter_name: data.is_anonymous ? null : data.reporter_name,
@@ -181,6 +181,7 @@ export class DatabaseService {
       const indianCityCoordinates: { [key: string]: { lat: number; lng: number } } = {
         'mumbai': { lat: 19.0760, lng: 72.8777 },
         'delhi': { lat: 28.6139, lng: 77.2090 },
+        'delhinn': { lat: 28.6139, lng: 77.2090 }, // Handle typo in your data
         'bangalore': { lat: 12.9716, lng: 77.5946 },
         'bengaluru': { lat: 12.9716, lng: 77.5946 },
         'chennai': { lat: 13.0827, lng: 80.2707 },
@@ -440,6 +441,100 @@ export class DatabaseService {
 
     } catch (error) {
       console.error('Error in getDefaulters:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Get all reports for testing/debugging (shows single reports too)
+  static async getAllReportsGrouped(): Promise<{
+    data: Array<{
+      corrupt_person_name: string;
+      designation: string;
+      area_region: string;
+      report_count: number;
+      latest_report_date: string;
+      categories: string[];
+      status: string;
+    }> | null;
+    error: any;
+  }> {
+    try {
+      console.log('Fetching ALL reports grouped by person (including single reports)...');
+      
+      const { data: allReports, error: reportsError } = await supabase
+        .from('corruption_reports')
+        .select('corrupt_person_name, designation, area_region, category, created_at')
+        .not('corrupt_person_name', 'is', null)
+        .neq('corrupt_person_name', '');
+
+      if (reportsError) {
+        console.error('Error fetching reports:', reportsError);
+        return { data: [], error: null };
+      }
+
+      if (!allReports || allReports.length === 0) {
+        console.log('No reports found in database');
+        return { data: [], error: null };
+      }
+
+      // Manual aggregation for ALL reports (including single ones)
+      const personMap = new Map<string, {
+        designation: string;
+        area_region: string;
+        reports: any[];
+        categories: Set<string>;
+      }>();
+
+      allReports.forEach(report => {
+        const personKey = report.corrupt_person_name.toLowerCase().trim();
+        
+        if (!personMap.has(personKey)) {
+          personMap.set(personKey, {
+            designation: report.designation,
+            area_region: report.area_region,
+            reports: [],
+            categories: new Set()
+          });
+        }
+        
+        const person = personMap.get(personKey)!;
+        person.reports.push(report);
+        person.categories.add(report.category);
+        
+        // Update with most recent info
+        if (new Date(report.created_at) > new Date(person.reports[0]?.created_at || '1970-01-01')) {
+          person.designation = report.designation;
+          person.area_region = report.area_region;
+        }
+      });
+
+      // Format ALL results (including single reports)
+      const allResults = Array.from(personMap.entries())
+        .map(([personName, person]) => {
+          const reportCount = person.reports.length;
+          let status = 'single';
+          if (reportCount >= 20) status = 'critical';
+          else if (reportCount >= 10) status = 'high';
+          else if (reportCount >= 5) status = 'medium';
+          else if (reportCount >= 2) status = 'low';
+
+          return {
+            corrupt_person_name: personName,
+            designation: person.designation,
+            area_region: person.area_region,
+            report_count: reportCount,
+            latest_report_date: new Date(Math.max(...person.reports.map(r => new Date(r.created_at).getTime()))).toISOString(),
+            categories: Array.from(person.categories),
+            status
+          };
+        })
+        .sort((a, b) => b.report_count - a.report_count);
+
+      console.log('All reports grouped results:', allResults.length);
+      return { data: allResults, error: null };
+
+    } catch (error) {
+      console.error('Error in getAllReportsGrouped:', error);
       return { data: null, error };
     }
   }

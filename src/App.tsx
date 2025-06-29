@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
@@ -10,15 +10,9 @@ import HeatMap from './pages/HeatMap';
 import About from './pages/About';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
-import { FileStorageService } from './lib/fileStorage';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    // Initialize storage bucket when app starts
-    FileStorageService.initializeBucket();
-  }, []);
 
   return (
     <Router>

@@ -10,46 +10,6 @@ export interface UploadedFile {
 export class FileStorageService {
   private static readonly BUCKET_NAME = 'evidence-files';
 
-  // Initialize storage bucket (call this once during app setup)
-  static async initializeBucket() {
-    try {
-      // Check if bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === this.BUCKET_NAME);
-
-      if (!bucketExists) {
-        // Create bucket if it doesn't exist
-        const { error } = await supabase.storage.createBucket(this.BUCKET_NAME, {
-          public: true,
-          allowedMimeTypes: [
-            'image/jpeg',
-            'image/png', 
-            'image/gif',
-            'image/webp',
-            'video/mp4',
-            'video/avi',
-            'video/mov',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/plain'
-          ],
-          fileSizeLimit: 10485760 // 10MB
-        });
-
-        if (error) {
-          console.error('Error creating storage bucket:', error);
-          throw error;
-        }
-
-        console.log('Evidence files bucket created successfully');
-      }
-    } catch (error) {
-      console.error('Error initializing storage bucket:', error);
-      // Don't throw error here as the app should still work without storage
-    }
-  }
-
   // Upload multiple files and return their URLs
   static async uploadFiles(files: File[]): Promise<UploadedFile[]> {
     const uploadedFiles: UploadedFile[] = [];

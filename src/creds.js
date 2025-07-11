@@ -1,2 +1,9 @@
 export const VITE_SUPABASE_URL='https://piivdfsycglbouofmhly.supabase.co'
 export const VITE_SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpaXZkZnN5Y2dsYm91b2ZtaGx5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTE0MTgwMywiZXhwIjoyMDY2NzE3ODAzfQ.U8KaxP3XH2eJguLojlL7lr-VRqRR4KWJ4c_2yMqXK5w'
+
+const Creds = {
+  VITE_SUPABASE_URL,
+  VITE_SUPABASE_ANON_KEY
+}
+
+export default Creds;

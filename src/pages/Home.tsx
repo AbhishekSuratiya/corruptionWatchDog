@@ -35,7 +35,7 @@ export default function Home() {
 
       // Fetch real statistics from database
       const stats = await DatabaseService.getStatistics();
-      
+
       setRealStats({
         totalReports: stats.totalReports,
         resolvedReports: stats.resolvedReports,
@@ -46,7 +46,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching real stats:', error);
       setStatsError('Failed to load statistics');
-      
+
       // Fallback to zero values if database fails
       setRealStats({
         totalReports: 0,
@@ -64,31 +64,31 @@ export default function Home() {
   const estimatedActiveUsers = Math.max(1, Math.floor(realStats.totalReports * 0.3)); // Rough estimate
 
   const stats = [
-    { 
-      label: 'Reports Filed', 
-      value: realStats.totalReports, 
-      icon: FileText, 
+    {
+      label: 'Reports Filed',
+      value: realStats.totalReports,
+      icon: FileText,
       color: 'from-blue-500 to-blue-600',
       description: 'Total corruption reports in database'
     },
-    { 
-      label: 'Cases Resolved', 
-      value: realStats.resolvedReports, 
-      icon: Shield, 
+    {
+      label: 'Cases Resolved',
+      value: realStats.resolvedReports,
+      icon: Shield,
       color: 'from-green-500 to-green-600',
       description: 'Reports marked as resolved'
     },
-    { 
-      label: 'Active Users', 
-      value: estimatedActiveUsers, 
-      icon: Users, 
+    {
+      label: 'Active Users',
+      value: estimatedActiveUsers,
+      icon: Users,
       color: 'from-purple-500 to-purple-600',
       description: 'Estimated active community members'
     },
-    { 
-      label: 'Regions Covered', 
-      value: realStats.activeRegions, 
-      icon: MapPin, 
+    {
+      label: 'Regions Covered',
+      value: realStats.activeRegions,
+      icon: MapPin,
       color: 'from-orange-500 to-orange-600',
       description: 'Cities and states with reports'
     }
@@ -129,7 +129,7 @@ export default function Home() {
         <div className="absolute inset-0">
           {/* Base gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900"></div>
-          
+
           {/* Geometric overlay pattern */}
           <div className="absolute inset-0 opacity-10">
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -145,23 +145,23 @@ export default function Home() {
               <rect width="100%" height="100%" fill="url(#dots)"/>
             </svg>
           </div>
-          
+
           {/* Floating geometric shapes */}
           <div className="absolute inset-0">
             {/* Large circle - top right */}
             <div className="absolute top-10 right-10 w-96 h-96 bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full blur-3xl animate-float"></div>
-            
+
             {/* Medium circle - bottom left */}
             <div className="absolute bottom-20 left-20 w-72 h-72 bg-gradient-to-br from-pink-500/20 to-red-500/20 rounded-full blur-3xl animate-float-delayed"></div>
-            
+
             {/* Small circles scattered */}
             <div className="absolute top-1/3 left-1/4 w-32 h-32 bg-gradient-to-br from-blue-400/30 to-purple-500/30 rounded-full blur-2xl animate-float"></div>
             <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-gradient-to-br from-green-400/20 to-teal-500/20 rounded-full blur-2xl animate-float-delayed"></div>
           </div>
-          
+
           {/* Subtle texture overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
-          
+
           {/* Justice/Legal themed elements */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-1/4 left-1/4 transform -rotate-12">
@@ -188,23 +188,23 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <h1 className="text-5xl md:text-7xl font-bold mb-16 animate-fade-in-up text-white" style={{ lineHeight: '1.1' }}>
               Fight Corruption
               <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent animate-gradient-x mt-4" style={{ paddingBottom: '0.2em' }}>
                 Together
               </span>
             </h1>
-            
+
             <p className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto leading-relaxed text-white/90 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              Empower your voice. Report corruption anonymously and help build a transparent, 
+              Empower your voice. Report corruption anonymously and help build a transparent,
               accountable society for everyone.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in-up" style={{ animationDelay: '400ms' }}>
               <Link to="/report">
-                <GradientButton 
-                  size="lg" 
+                <GradientButton
+                  size="lg"
                   className="w-full sm:w-auto bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 font-bold px-10 py-5 text-lg shadow-2xl hover:shadow-yellow-500/25"
                   glow
                 >
@@ -213,9 +213,9 @@ export default function Home() {
                 </GradientButton>
               </Link>
               <Link to="/directory">
-                <GradientButton 
-                  variant="secondary" 
-                  size="lg" 
+                <GradientButton
+                  variant="secondary"
+                  size="lg"
                   className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white/20 px-10 py-5 text-lg"
                 >
                   <Eye className="w-5 h-5" />
@@ -233,13 +233,13 @@ export default function Home() {
           {/* Stats Header */}
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Live Platform 
+              Live Platform
               <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> Statistics</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Real-time data from our corruption reports database, updated automatically as new reports are submitted.
             </p>
-            
+
             {/* Refresh Button */}
             <div className="mt-6 flex justify-center">
               <button
@@ -283,7 +283,7 @@ export default function Home() {
                 <FloatingCard key={index} delay={index * 100} className="p-8 text-center group relative overflow-hidden">
                   {/* Background gradient on hover */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
-                  
+
                   <div className="relative z-10">
                     <div className="flex justify-center mb-6">
                       <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
@@ -295,7 +295,7 @@ export default function Home() {
                     </div>
                     <div className="text-gray-600 font-medium mb-2">{stat.label}</div>
                     <div className="text-xs text-gray-500 leading-relaxed">{stat.description}</div>
-                    
+
                     {/* Real-time indicator */}
                     <div className="mt-4 flex items-center justify-center space-x-1">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -306,19 +306,6 @@ export default function Home() {
               ))
             )}
           </div>
-
-          {/* Data Source Info */}
-          <div className="mt-12 text-center">
-            <div className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-blue-700 font-medium">
-                Data sourced directly from Supabase database
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Statistics update automatically as new reports are submitted to the platform
-            </p>
-          </div>
         </div>
       </section>
 
@@ -328,15 +315,15 @@ export default function Home() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20 animate-fade-in-up">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose 
+              Why Choose
               <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> Corruption Watchdog</span>?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Our platform combines cutting-edge technology with human-centered design 
+              Our platform combines cutting-edge technology with human-centered design
               to create the most effective anti-corruption tool available.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <FloatingCard key={index} delay={index * 150} className="p-8 group relative overflow-hidden">
@@ -365,7 +352,7 @@ export default function Home() {
         <div className="absolute inset-0">
           {/* Modern gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-900"></div>
-          
+
           {/* Geometric pattern overlay */}
           <div className="absolute inset-0 opacity-10">
             <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -377,11 +364,11 @@ export default function Home() {
               <rect width="100%" height="100%" fill="url(#hexagons)"/>
             </svg>
           </div>
-          
+
           {/* Floating elements */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-float"></div>
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-yellow-500/20 rounded-full blur-3xl animate-float-delayed"></div>
-          
+
           {/* Justice scales silhouette */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
@@ -391,22 +378,22 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="animate-fade-in-up">
             <h2 className="text-4xl md:text-5xl font-bold mb-16 text-white" style={{ lineHeight: '1.1' }}>
-              Ready to Make a 
+              Ready to Make a
               <span className="block bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent mt-4" style={{ paddingBottom: '0.2em' }}>
                 Difference
               </span>?
             </h2>
             <p className="text-xl mb-12 max-w-3xl mx-auto text-white/90 leading-relaxed">
-              Join thousands of citizens who are actively fighting corruption in their communities. 
+              Join thousands of citizens who are actively fighting corruption in their communities.
               Your report could be the catalyst for change.
             </p>
             <Link to="/report">
-              <GradientButton 
-                size="lg" 
+              <GradientButton
+                size="lg"
                 className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 font-bold px-12 py-6 text-xl shadow-2xl hover:shadow-yellow-500/25 transform hover:scale-105"
                 glow
               >

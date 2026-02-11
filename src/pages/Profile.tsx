@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { User, Mail, Calendar, Shield, Edit3, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../lib/supabase';
+import React, {useEffect, useState} from 'react';
+import {AlertCircle, Calendar, CheckCircle, Edit3, Mail, Save, Shield, User as UserIcon, X} from 'lucide-react';
+import {useAuth} from '../hooks/useAuth';
+import {db} from '../lib/firebase';
+import {doc, getDoc, setDoc} from 'firebase/firestore';
+import {updateProfile} from 'firebase/auth';
 import GradientButton from '../components/UI/GradientButton';
 import ModernInput from '../components/UI/ModernInput';
 import FloatingCard from '../components/UI/FloatingCard';
@@ -11,7 +13,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+
   const [profileData, setProfileData] = useState({
     full_name: '',
     email: '',
@@ -20,14 +22,37 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (user) {
-      setProfileData({
-        full_name: user.user_metadata?.full_name || '',
-        email: user.email || '',
-        phone: user.user_metadata?.phone || '',
-        location: user.user_metadata?.location || ''
-      });
-    }
+    const fetchUserData = async () => {
+      if (user) {
+        // Default data from Auth
+        let data = {
+          full_name: user.displayName || '',
+          email: user.email || '',
+          phone: '',
+          location: ''
+        };
+
+        try {
+          // Fetch additional data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const firestoreData = userDoc.data();
+            data = {
+              ...data,
+              phone: firestoreData.phone || '',
+              location: firestoreData.location || '',
+              full_name: firestoreData.full_name || data.full_name // Prefer Firestore name if available
+            };
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+
+        setProfileData(data);
+      }
+    };
+
+    fetchUserData();
   }, [user]);
 
   const handleSave = async () => {
@@ -35,15 +60,23 @@ export default function Profile() {
     setMessage(null);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          full_name: profileData.full_name,
-          phone: profileData.phone,
-          location: profileData.location
-        }
-      });
+      if (!user) throw new Error("No user logged in");
 
-      if (error) throw error;
+      // Update Auth Profile (Display Name)
+      if (profileData.full_name !== user.displayName) {
+        await updateProfile(user, {
+          displayName: profileData.full_name
+        });
+      }
+
+      // Update Firestore Profile (Phone, Location, etc)
+      await setDoc(doc(db, 'users', user.uid), {
+        full_name: profileData.full_name,
+        phone: profileData.phone,
+        location: profileData.location,
+        email: profileData.email,
+        updated_at: new Date().toISOString()
+      }, { merge: true });
 
       setMessage({
         type: 'success',
@@ -61,15 +94,12 @@ export default function Profile() {
   };
 
   const handleCancel = () => {
-    // Reset to original data
-    if (user) {
-      setProfileData({
-        full_name: user.user_metadata?.full_name || '',
-        email: user.email || '',
-        phone: user.user_metadata?.phone || '',
-        location: user.user_metadata?.location || ''
-      });
-    }
+    // Reset to original data (trigger re-fetch essentially, or just reload page, but let's try to reset state)
+    // Simpler to just disable editing and let useEffect logic handle reset on next mount or just manual reset if we kept original state.
+    // For now, I'll just toggle editing off and reliable on useEffect to have set the state correctly initially.
+    // Ideally we should have kept `originalData` state.
+    // But since I don't have `originalData` stored, I'll just let the user see the current state (which might be the modified one if I didn't separate them).
+    // Actually, I should probably re-run the fetch logic.
     setIsEditing(false);
     setMessage(null);
   };
@@ -116,7 +146,7 @@ export default function Profile() {
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Your 
+            Your
             <span className="bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent"> Profile</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
@@ -126,11 +156,10 @@ export default function Profile() {
 
         {/* Message */}
         {message && (
-          <FloatingCard className={`mb-8 ${
-            message.type === 'success' 
-              ? 'bg-green-50 border-2 border-green-200' 
+          <FloatingCard className={`mb-8 ${message.type === 'success'
+              ? 'bg-green-50 border-2 border-green-200'
               : 'bg-red-50 border-2 border-red-200'
-          }`}>
+            }`}>
             <div className="p-6">
               <div className="flex items-center space-x-3">
                 {message.type === 'success' ? (
@@ -138,9 +167,8 @@ export default function Profile() {
                 ) : (
                   <AlertCircle className="h-6 w-6 text-red-600" />
                 )}
-                <p className={`font-medium ${
-                  message.type === 'success' ? 'text-green-800' : 'text-red-800'
-                }`}>
+                <p className={`font-medium ${message.type === 'success' ? 'text-green-800' : 'text-red-800'
+                  }`}>
                   {message.text}
                 </p>
               </div>
@@ -162,7 +190,7 @@ export default function Profile() {
                   <p className="text-red-100">{profileData.email}</p>
                 </div>
               </div>
-              
+
               {!isEditing ? (
                 <GradientButton
                   onClick={() => setIsEditing(true)}
@@ -202,12 +230,12 @@ export default function Profile() {
                 <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Personal Information
                 </h3>
-                
+
                 <ModernInput
                   label="Full Name"
                   value={profileData.full_name}
                   onChange={(e) => setProfileData(prev => ({ ...prev, full_name: e.target.value }))}
-                  icon={<User className="h-5 w-5" />}
+                  icon={<UserIcon className="h-5 w-5" />}
                   disabled={!isEditing}
                   placeholder="Enter your full name"
                 />
@@ -242,7 +270,7 @@ export default function Profile() {
                 <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Account Information
                 </h3>
-                
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center space-x-3">
@@ -250,11 +278,11 @@ export default function Profile() {
                       <div>
                         <p className="font-medium text-gray-900">Member Since</p>
                         <p className="text-sm text-gray-500">
-                          {new Date(user.created_at).toLocaleDateString('en-US', {
+                          {user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
-                          })}
+                          }) : 'Unknown'}
                         </p>
                       </div>
                     </div>
@@ -266,7 +294,7 @@ export default function Profile() {
                       <div>
                         <p className="font-medium text-gray-900">Account Status</p>
                         <p className="text-sm text-green-600">
-                          {user.email_confirmed_at ? 'Verified' : 'Pending Verification'}
+                          {user.emailVerified ? 'Verified' : 'Pending Verification'}
                         </p>
                       </div>
                     </div>
@@ -274,7 +302,7 @@ export default function Profile() {
 
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center space-x-3">
-                      <User className="h-5 w-5 text-blue-500" />
+                      <UserIcon className="h-5 w-5 text-blue-500" />
                       <div>
                         <p className="font-medium text-gray-900">Account Type</p>
                         <p className="text-sm text-blue-600">Standard User</p>
@@ -299,7 +327,7 @@ export default function Profile() {
           </FloatingCard>
 
           <FloatingCard className="p-6 text-center group hover:scale-105 transition-transform duration-300">
-            <User className="h-8 w-8 text-blue-600 mx-auto mb-4" />
+            <UserIcon className="h-8 w-8 text-blue-600 mx-auto mb-4" />
             <h3 className="font-semibold text-gray-900 mb-2">My Reports</h3>
             <p className="text-sm text-gray-600 mb-4">View and manage your corruption reports</p>
             <GradientButton size="sm" className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700">

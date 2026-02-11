@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { User } from '@supabase/supabase-js';
-import { useAuth } from './useAuth';
+import {useEffect, useState} from 'react';
+import {useAuth} from './useAuth';
 
 export function useAdmin() {
   const { user, loading } = useAuth();

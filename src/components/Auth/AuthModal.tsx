@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff, Shield, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { auth } from '../../lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import GradientButton from '../UI/GradientButton';
 import ModernInput from '../UI/ModernInput';
 
@@ -15,7 +16,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -60,7 +61,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
       if (!formData.fullName) {
         newErrors.fullName = 'Full name is required';
       }
-      
+
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Passwords do not match';
       }
@@ -72,7 +73,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -80,60 +81,38 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
 
     try {
       if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formData.fullName
-            },
-            // Disable email confirmation for immediate login
-            emailRedirectTo: undefined
-          }
+        const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+
+        // Update profile with full name
+        await updateProfile(user, {
+          displayName: formData.fullName
         });
 
-        if (error) throw error;
+        setMessage({
+          type: 'success',
+          text: 'Account created successfully! You are now logged in.'
+        });
 
-        // Check if user was created successfully
-        if (data.user) {
-          setMessage({
-            type: 'success',
-            text: 'Account created successfully! You are now logged in.'
-          });
-          
-          // Reset form
-          setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
-          
-          // Close modal after successful signup
-          setTimeout(() => {
-            onClose();
-          }, 1500);
-        }
-        
+        setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
+
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+
       } else if (mode === 'login') {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password
-        });
-
-        if (error) throw error;
+        await signInWithEmailAndPassword(auth, formData.email, formData.password);
 
         setMessage({
           type: 'success',
           text: 'Login successful! Welcome back.'
         });
-        
-        // Close modal after successful login
+
         setTimeout(() => {
           onClose();
         }, 1000);
-        
-      } else if (mode === 'forgot') {
-        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-          redirectTo: `${window.location.origin}/reset-password`
-        });
 
-        if (error) throw error;
+      } else if (mode === 'forgot') {
+        await sendPasswordResetEmail(auth, formData.email);
 
         setMessage({
           type: 'success',
@@ -142,18 +121,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      
-      // Handle specific error messages
+
       let errorMessage = error.message || 'An error occurred. Please try again.';
-      
-      if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = 'Please check your email and click the confirmation link before signing in.';
-      } else if (error.message?.includes('User already registered')) {
-        errorMessage = 'An account with this email already exists. Please sign in instead.';
+
+      // Firebase specific error messages mappings
+      if (error.code === 'auth/invalid-credential' || error.message?.includes('invalid-credential')) {
+        errorMessage = 'Invalid email or password.';
+      } else if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No user found with this email.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password.';
       }
-      
+
       setMessage({
         type: 'error',
         text: errorMessage
@@ -195,7 +176,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      
+
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
@@ -207,13 +188,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
             >
               <X className="h-5 w-5" />
             </button>
-            
+
             <div className="flex justify-center mb-6">
               <div className="p-4 bg-white/10 backdrop-blur-sm rounded-2xl">
                 <Shield className="h-8 w-8 text-white" />
               </div>
             </div>
-            
+
             <h2 className="text-2xl font-bold text-center mb-2">{getTitle()}</h2>
             <p className="text-red-100 text-center text-sm">{getSubtitle()}</p>
           </div>
@@ -222,11 +203,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
           <div className="px-8 py-8">
             {/* Message */}
             {message && (
-              <div className={`mb-6 p-4 rounded-xl border ${
-                message.type === 'success' 
-                  ? 'bg-green-50 border-green-200 text-green-800' 
+              <div className={`mb-6 p-4 rounded-xl border ${message.type === 'success'
+                  ? 'bg-green-50 border-green-200 text-green-800'
                   : 'bg-red-50 border-red-200 text-red-800'
-              }`}>
+                }`}>
                 <div className="flex items-center space-x-2">
                   {message.type === 'success' ? (
                     <CheckCircle className="h-5 w-5 text-green-600" />

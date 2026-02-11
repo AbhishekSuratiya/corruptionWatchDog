@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { storage } from './firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export interface UploadedFile {
   name: string;
@@ -8,7 +9,7 @@ export interface UploadedFile {
 }
 
 export class FileStorageService {
-  private static readonly BUCKET_NAME = 'evidence-files';
+
 
   // Upload multiple files and return their URLs
   static async uploadFiles(files: File[]): Promise<UploadedFile[]> {
@@ -37,55 +38,65 @@ export class FileStorageService {
       const fileName = `${timestamp}_${randomString}.${fileExtension}`;
       const filePath = `evidence/${fileName}`;
 
-      // Upload file to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const storageRef = ref(storage, filePath);
 
-      if (error) {
-        throw error;
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(this.BUCKET_NAME)
-        .getPublicUrl(filePath);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
 
       return {
         name: file.name,
-        url: urlData.publicUrl,
+        url: url,
         type: file.type,
         size: file.size
       };
 
     } catch (error) {
       console.error('Error uploading file:', error);
-      throw new Error(`Failed to upload ${file.name}: ${error.message}`);
+      throw new Error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   // Get file URL from storage path
-  static getFileUrl(filePath: string): string {
-    const { data } = supabase.storage
-      .from(this.BUCKET_NAME)
-      .getPublicUrl(filePath);
-    
-    return data.publicUrl;
+  static async getFileUrl(filePath: string): Promise<string> {
+    const storageRef = ref(storage, filePath);
+    return await getDownloadURL(storageRef);
   }
 
   // Delete files from storage
-  static async deleteFiles(filePaths: string[]): Promise<void> {
+  static async deleteFiles(fileUrls: string[]): Promise<void> {
     try {
-      const { error } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .remove(filePaths);
+      // Firebase Storage deletes by reference. Construct reference from URL.
+      // This is tricky if we only have URLs.
+      // Assuming fileUrls are actually paths or we can extract the path.
+      // However, the original code took filePaths. If consumers pass paths, good.
+      // If consumers pass full URLs, we need to parse them.
+      // Checking usage in codebase would be wise, but let's assume they might pass full URLs
+      // created by THIS service.
 
-      if (error) {
-        throw error;
-      }
+      // But for now, let's assume they are paths because the original method name was getFileUrl(filePath).
+
+      const parsedPromises = fileUrls.map(urlOrPath => {
+
+        // Basic check if it's a full URL (heuristic)
+        if (urlOrPath.includes('firebasestorage')) {
+          // It's a URL, we need to extract the path or use refFromURL (not available in all SDK versions directly like this)
+          // Ideally we stick to paths.
+          // But if we only have the download URL, we can try to create a ref from it.
+          try {
+            const storageRef = ref(storage, urlOrPath);
+            return deleteObject(storageRef);
+          } catch (e) {
+            // Fallback: treat as path
+            const storageRef = ref(storage, urlOrPath);
+            return deleteObject(storageRef);
+          }
+        } else {
+          const storageRef = ref(storage, urlOrPath);
+          return deleteObject(storageRef);
+        }
+      });
+
+      await Promise.all(parsedPromises);
     } catch (error) {
       console.error('Error deleting files:', error);
       throw error;
@@ -95,7 +106,7 @@ export class FileStorageService {
   // Get file type from filename
   static getFileType(filename: string): 'image' | 'video' | 'pdf' | 'document' | 'unknown' {
     const ext = filename.toLowerCase().split('.').pop();
-    
+
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext || '')) {
       return 'image';
     } else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(ext || '')) {

@@ -44,13 +44,13 @@ export default function ReportForm() {
     latitude: number;
     longitude: number;
   } | null>(null);
-  
-  const { 
-    register, 
-    handleSubmit, 
-    watch, 
+
+  const {
+    register,
+    handleSubmit,
+    watch,
     setValue,
-    formState: { errors }, 
+    formState: { errors },
     reset
   } = useForm<ReportFormData>({
     mode: 'onChange',
@@ -68,7 +68,7 @@ export default function ReportForm() {
       reporter_email: ''
     }
   });
-  
+
   const isAnonymous = watch('is_anonymous');
   const areaRegion = watch('area_region');
   const corruptPersonName = watch('corrupt_person_name');
@@ -78,11 +78,11 @@ export default function ReportForm() {
     if (user && !authLoading) {
       // Set default to non-anonymous for logged-in users
       setValue('is_anonymous', false);
-      
+
       // Auto-fill user details
       const fullName = user.user_metadata?.full_name || '';
       const email = user.email || '';
-      
+
       setValue('reporter_name', fullName);
       setValue('reporter_email', email);
     } else if (!user && !authLoading) {
@@ -101,9 +101,9 @@ export default function ReportForm() {
       setValue('reporter_email', '');
     } else if (user) {
       // Re-fill user details when switching back to non-anonymous
-      const fullName = user.user_metadata?.full_name || '';
-      const email = user.email || '';
-      
+      const fullName = user?.displayName || '';
+      const email = user?.email || '';
+
       setValue('reporter_name', fullName);
       setValue('reporter_email', email);
     }
@@ -116,7 +116,7 @@ export default function ReportForm() {
 
   const handlePersonSelect = (person: { name: string; designation: string; area: string; reportCount: number }) => {
     setSelectedPersonInfo(person);
-    
+
     // Auto-fill designation and area if they're empty
     if (!watch('designation')) {
       setValue('designation', person.designation);
@@ -159,23 +159,23 @@ export default function ReportForm() {
         const response = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
         );
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data && data.address) {
             const address = data.address;
-            
+
             // Try to get the most appropriate location name
-            const locationName = address.city || 
-                                address.town || 
-                                address.village || 
+            const locationName = address.city ||
+                                address.town ||
+                                address.village ||
                                 address.municipality ||
                                 address.county ||
-                                address.state_district || 
+                                address.state_district ||
                                 address.state ||
                                 data.display_name?.split(',')[0] ||
                                 'Current Location';
-            
+
             setValue('area_region', locationName, { shouldValidate: true });
           } else {
             // Fallback to a generic name if geocoding returns no useful data
@@ -192,7 +192,7 @@ export default function ReportForm() {
 
     } catch (error: any) {
       console.error('Error getting location:', error);
-      
+
       let errorMessage = 'Unable to get your location. ';
       if (error.code === 1) {
         errorMessage += 'Location access was denied. Please enable location services and try again.';
@@ -203,7 +203,7 @@ export default function ReportForm() {
       } else {
         errorMessage += 'Please enter your location manually.';
       }
-      
+
       setLocationError(errorMessage);
       setLocationCoordinates(null);
     } finally {
@@ -214,15 +214,15 @@ export default function ReportForm() {
   const onSubmit = async (data: ReportFormData) => {
     setIsSubmitting(true);
     setSubmitError(null);
-    
+
     try {
       // Upload files first if any
       let evidenceUrls: string[] = [];
-      
+
       if (files.length > 0) {
         setIsUploading(true);
         console.log('Uploading files:', files.map(f => f.name));
-        
+
         try {
           const uploadedFiles = await FileStorageService.uploadFiles(files);
           evidenceUrls = uploadedFiles.map(file => file.url);
@@ -259,13 +259,13 @@ export default function ReportForm() {
 
       // Save to database
       const { data: savedReport, error } = await DatabaseService.createReport(reportData);
-      
+
       if (error) {
         throw new Error(error.message || 'Failed to submit report');
       }
 
       console.log('Report saved successfully:', savedReport);
-      
+
       setIsSubmitted(true);
       reset();
       setFiles([]);
@@ -284,11 +284,11 @@ export default function ReportForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      
+
       // Validate files
       const validFiles: File[] = [];
       const errors: string[] = [];
-      
+
       selectedFiles.forEach(file => {
         const validation = FileStorageService.validateFile(file);
         if (validation.isValid) {
@@ -297,12 +297,12 @@ export default function ReportForm() {
           errors.push(validation.error!);
         }
       });
-      
+
       if (errors.length > 0) {
         setSubmitError(errors.join('\n'));
         return;
       }
-      
+
       setFiles(validFiles);
       setSubmitError(null);
     }
@@ -355,8 +355,8 @@ export default function ReportForm() {
               Report Submitted Successfully
             </h2>
             <p className="text-gray-600 mb-6">
-              Thank you for your courage in reporting corruption. Your report has been saved to our database 
-              {files.length > 0 && ' along with your evidence files'} and will be reviewed by our team. 
+              Thank you for your courage in reporting corruption. Your report has been saved to our database
+              {files.length > 0 && ' along with your evidence files'} and will be reviewed by our team.
               Together, we can build a more transparent society.
             </p>
             {uploadedFiles.length > 0 && (
@@ -402,7 +402,7 @@ export default function ReportForm() {
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Your voice matters. Help us fight corruption by reporting incidents safely and securely.
           </p>
-          
+
           {/* User Status Indicator */}
           {!authLoading && (
             <div className="mt-6 inline-flex items-center space-x-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
@@ -458,7 +458,7 @@ export default function ReportForm() {
                     </label>
                   </div>
                   <p className="text-sm text-yellow-600 mt-2">
-                    {user 
+                    {user
                       ? 'Your details are auto-filled from your account. Check this box to report anonymously instead.'
                       : 'Anonymous reports help protect your identity while still allowing us to investigate the corruption.'
                     }
@@ -472,7 +472,7 @@ export default function ReportForm() {
               <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
                 Corrupt Person Details
               </h2>
-              
+
               {/* First Row: Full Name and Designation - Properly Aligned */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-2">
@@ -488,7 +488,7 @@ export default function ReportForm() {
                   {/* Hidden input for form validation */}
                   <input
                     type="hidden"
-                    {...register('corrupt_person_name', { 
+                    {...register('corrupt_person_name', {
                       required: 'Full name is required',
                       minLength: {
                         value: 2,
@@ -503,7 +503,7 @@ export default function ReportForm() {
                     })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="designation" className="block text-sm font-medium text-gray-700">
                     Designation/Job Title *
@@ -514,7 +514,7 @@ export default function ReportForm() {
                   <input
                     type="text"
                     id="designation"
-                    {...register('designation', { 
+                    {...register('designation', {
                       required: 'Designation is required',
                       minLength: {
                         value: 2,
@@ -549,7 +549,7 @@ export default function ReportForm() {
                         Previous Reports Found
                       </h4>
                       <p className="text-sm text-orange-700">
-                        <strong>{selectedPersonInfo.name}</strong> has been reported <strong>{selectedPersonInfo.reportCount}</strong> time{selectedPersonInfo.reportCount !== 1 ? 's' : ''} before. 
+                        <strong>{selectedPersonInfo.name}</strong> has been reported <strong>{selectedPersonInfo.reportCount}</strong> time{selectedPersonInfo.reportCount !== 1 ? 's' : ''} before.
                         {selectedPersonInfo.reportCount > 1 && (
                           <span className="text-red-700 font-medium"> This person is a repeat offender.</span>
                         )}
@@ -595,7 +595,7 @@ export default function ReportForm() {
               <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
                 Incident Details
               </h2>
-              
+
               {/* Second Row: Area/Region and Category - Properly Aligned */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div className="space-y-2">
@@ -606,7 +606,7 @@ export default function ReportForm() {
                         <span className="text-green-600 ml-2 text-xs">(Auto-filled from previous report)</span>
                       )}
                     </label>
-                    
+
                     {/* Live Location Button */}
                     <button
                       type="button"
@@ -632,7 +632,7 @@ export default function ReportForm() {
                       )}
                     </button>
                   </div>
-                  
+
                   <LocationAutocomplete
                     value={areaRegion}
                     onChange={handleLocationChange}
@@ -640,7 +640,7 @@ export default function ReportForm() {
                     error={errors.area_region?.message}
                     required
                   />
-                  
+
                   {/* Location Success Message */}
                   {locationCoordinates && (
                     <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -655,7 +655,7 @@ export default function ReportForm() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Location Error */}
                   {locationError && (
                     <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
@@ -665,7 +665,7 @@ export default function ReportForm() {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedPersonInfo && (
                     <p className="text-xs text-green-600">
                       Auto-filled from previous report: {selectedPersonInfo.area}
@@ -674,7 +674,7 @@ export default function ReportForm() {
                   {/* Hidden input for form validation */}
                   <input
                     type="hidden"
-                    {...register('area_region', { 
+                    {...register('area_region', {
                       required: 'Area/Region is required',
                       minLength: {
                         value: 2,
@@ -689,7 +689,7 @@ export default function ReportForm() {
                     })}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700">
                     Category of Corruption *
@@ -720,7 +720,7 @@ export default function ReportForm() {
                 <textarea
                   id="description"
                   rows={6}
-                  {...register('description', { 
+                  {...register('description', {
                     required: 'Description is required',
                     minLength: {
                       value: 10,
@@ -751,7 +751,7 @@ export default function ReportForm() {
               <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
                 Authorities Involvement
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -821,7 +821,7 @@ export default function ReportForm() {
               <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2">
                 Evidence Files (Optional)
               </h2>
-              
+
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-red-400 transition-colors">
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <div className="space-y-2">
@@ -842,7 +842,7 @@ export default function ReportForm() {
                     PNG, JPG, MP4, PDF, DOC up to 10MB each
                   </p>
                 </div>
-                
+
                 {/* Selected Files Display */}
                 {files.length > 0 && (
                   <div className="mt-6 space-y-3">
@@ -900,7 +900,7 @@ export default function ReportForm() {
                     </span>
                   )}
                 </h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="reporter_name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -934,7 +934,7 @@ export default function ReportForm() {
                       <p className="text-sm text-gray-500 mt-1">Enter your full name</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="reporter_email" className="block text-sm font-medium text-gray-700 mb-2">
                       Your Email {user && <span className="text-green-600">✓</span>}
@@ -1013,7 +1013,7 @@ export default function ReportForm() {
                 By submitting this report, you agree to our terms of service and privacy policy.
                 All reports and evidence files are stored securely and treated with strict confidentiality.
               </p>
-              
+
               {/* Show validation errors summary */}
               {Object.keys(errors).length > 0 && (
                 <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">

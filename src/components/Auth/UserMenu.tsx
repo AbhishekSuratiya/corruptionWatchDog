@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Settings, FileText, Shield, ChevronDown } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { auth } from '../../lib/firebase';
 
 interface UserMenuProps {
   user: any;
@@ -23,7 +23,7 @@ export default function UserMenu({ user }: UserMenuProps) {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await auth.signOut();
       setIsOpen(false);
     } catch (error) {
       console.error('Error signing out:', error);
@@ -31,7 +31,7 @@ export default function UserMenu({ user }: UserMenuProps) {
   };
 
   const getUserDisplayName = () => {
-    return user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+    return user?.displayName || user?.email?.split('@')[0] || 'User';
   };
 
   const getUserInitials = () => {
@@ -50,11 +50,11 @@ export default function UserMenu({ user }: UserMenuProps) {
           <span className="text-sm font-bold">
             {getUserInitials()}
           </span>
-          
+
           {/* Small chevron indicator */}
           <ChevronDown className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-white text-gray-600 rounded-full p-0.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
-        
+
         {/* Tooltip - Only show when menu is closed */}
         {!isOpen && (
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
@@ -74,7 +74,7 @@ export default function UserMenu({ user }: UserMenuProps) {
               <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0">
                 {getUserInitials()}
               </div>
-              
+
               {/* User details */}
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-lg leading-tight truncate">
@@ -106,7 +106,7 @@ export default function UserMenu({ user }: UserMenuProps) {
                 <div className="text-xs text-gray-500">Manage your account</div>
               </div>
             </a>
-            
+
             <a
               href="/my-reports"
               className="flex items-center space-x-4 px-6 py-3 text-gray-700 hover:bg-gray-50 transition-colors group"
@@ -119,7 +119,7 @@ export default function UserMenu({ user }: UserMenuProps) {
                 <div className="text-xs text-gray-500">View your submissions</div>
               </div>
             </a>
-            
+
             <a
               href="/settings"
               className="flex items-center space-x-4 px-6 py-3 text-gray-700 hover:bg-gray-50 transition-colors group"
@@ -132,7 +132,7 @@ export default function UserMenu({ user }: UserMenuProps) {
                 <div className="text-xs text-gray-500">Preferences & privacy</div>
               </div>
             </a>
-            
+
             <a
               href="/privacy"
               className="flex items-center space-x-4 px-6 py-3 text-gray-700 hover:bg-gray-50 transition-colors group"

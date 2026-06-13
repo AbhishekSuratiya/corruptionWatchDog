@@ -189,26 +189,27 @@ export default function Home() {
               </div>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-16 animate-fade-in-up text-white" style={{ lineHeight: '1.1' }}>
+            <h1 className="text-5xl md:text-7xl font-extrabold mb-10 tracking-tight animate-fade-in-up text-white leading-[1.05]" style={{ lineHeight: '1.05' }}>
               Fight Corruption
-              <span className="block bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent animate-gradient-x mt-4" style={{ paddingBottom: '0.2em' }}>
+              <span className="block bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-500 bg-clip-text text-transparent animate-gradient-x mt-3" style={{ paddingBottom: '0.1em' }}>
                 Together
               </span>
             </h1>
 
-            <p className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto leading-relaxed text-white/90 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            <p className="text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed text-slate-100/90 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
               Empower your voice. Report corruption anonymously and help build a transparent,
               accountable society for everyone.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+            <div className="flex flex-col sm:flex-row gap-5 justify-center animate-fade-in-up" style={{ animationDelay: '400ms' }}>
               <Link to="/report">
                 <GradientButton
+                  variant="primary"
                   size="lg"
-                  className="w-full sm:w-auto bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 font-bold px-10 py-5 text-lg shadow-2xl hover:shadow-yellow-500/25"
+                  className="w-full sm:w-auto bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 text-slate-950 hover:from-yellow-350 hover:to-yellow-450 font-bold shadow-2xl shadow-yellow-500/20"
                   glow
                 >
-                  <Zap className="w-5 h-5" />
+                  <Zap className="w-5 h-5 text-slate-950" />
                   <span>Report Corruption Now</span>
                 </GradientButton>
               </Link>
@@ -216,7 +217,7 @@ export default function Home() {
                 <GradientButton
                   variant="secondary"
                   size="lg"
-                  className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white/20 px-10 py-5 text-lg"
+                  className="w-full sm:w-auto bg-white/10 border border-white/20 hover:bg-white/20 text-white"
                 >
                   <Eye className="w-5 h-5" />
                   <span>View Directory</span>
@@ -381,23 +382,24 @@ export default function Home() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="animate-fade-in-up">
-            <h2 className="text-4xl md:text-5xl font-bold mb-16 text-white" style={{ lineHeight: '1.1' }}>
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-10 text-white tracking-tight leading-[1.05]" style={{ lineHeight: '1.05' }}>
               Ready to Make a
-              <span className="block bg-gradient-to-r from-yellow-400 to-yellow-300 bg-clip-text text-transparent mt-4" style={{ paddingBottom: '0.2em' }}>
+              <span className="block bg-gradient-to-r from-yellow-300 to-yellow-500 bg-clip-text text-transparent mt-3" style={{ paddingBottom: '0.1em' }}>
                 Difference
               </span>?
             </h2>
-            <p className="text-xl mb-12 max-w-3xl mx-auto text-white/90 leading-relaxed">
+            <p className="text-lg mb-12 max-w-2xl mx-auto text-slate-100/90 leading-relaxed">
               Join thousands of citizens who are actively fighting corruption in their communities.
               Your report could be the catalyst for change.
             </p>
             <Link to="/report">
               <GradientButton
+                variant="primary"
                 size="lg"
-                className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 font-bold px-12 py-6 text-xl shadow-2xl hover:shadow-yellow-500/25 transform hover:scale-105"
+                className="bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 text-slate-950 hover:from-yellow-350 hover:to-yellow-450 font-bold shadow-2xl shadow-yellow-500/25 px-10"
                 glow
               >
-                <Shield className="w-6 h-6" />
+                <Shield className="w-5 h-5 text-slate-950" />
                 <span>Start Your Report</span>
               </GradientButton>
             </Link>

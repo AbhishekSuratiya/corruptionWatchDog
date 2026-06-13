@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../hooks/useAdmin';
 import { AdminDatabaseService, AdminUser, AdminReport, AdminStats } from '../lib/adminDatabase';
+import { DatabaseService } from '../lib/database';
 import { CORRUPTION_CATEGORIES } from '../lib/constants';
 import GradientButton from '../components/UI/GradientButton';
 import FloatingCard from '../components/UI/FloatingCard';
@@ -63,6 +64,40 @@ export default function Admin() {
       }
     }
   }, [adminLoading, isAdmin, activeTab]);
+
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeedDatabase = async () => {
+    if (!confirm('Are you sure you want to seed the database with sample reports?')) {
+      return;
+    }
+    
+    try {
+      setSeeding(true);
+      setError(null);
+      setMessage(null);
+      
+      const { success, error: seedError } = await DatabaseService.seedDatabase();
+      if (!success) throw seedError;
+      
+      setMessage({
+        type: 'success',
+        text: 'Database seeded with sample reports successfully!'
+      });
+      
+      // Refresh statistics, users, and reports
+      await Promise.all([loadStats(), loadUsers(), loadReports()]);
+      
+    } catch (err) {
+      console.error('Error seeding database:', err);
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to seed database'
+      });
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   // Load stats
   const loadStats = async () => {
@@ -490,9 +525,19 @@ export default function Admin() {
             Admin 
             <span className="bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent"> Dashboard</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-6">
             Manage users, reports, and monitor platform activity
           </p>
+          <div className="flex justify-center">
+            <GradientButton
+              onClick={handleSeedDatabase}
+              isLoading={seeding}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Seed Sample Database Data</span>
+            </GradientButton>
+          </div>
         </div>
 
         {/* Message */}

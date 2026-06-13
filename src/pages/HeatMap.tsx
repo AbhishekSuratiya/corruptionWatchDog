@@ -719,11 +719,11 @@ export default function HeatMap() {
                   Real-Time Data from Database
                 </h3>
                 <p className="text-orange-700 leading-relaxed mb-3">
-                  This heat map displays live data directly from our Supabase database. All corruption reports 
+                  This heat map displays live data directly from our Firebase Firestore database. All corruption reports 
                   submitted through our platform are automatically processed and visualized here in real-time.
                 </p>
                 <p className="text-orange-700 leading-relaxed">
-                  <strong>Data Source:</strong> Supabase PostgreSQL database with real-time updates. 
+                  <strong>Data Source:</strong> Firebase Firestore database with real-time updates. 
                   Last refreshed: {new Date().toLocaleString()}
                 </p>
               </div>

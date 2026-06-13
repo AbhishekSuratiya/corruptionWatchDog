@@ -17,10 +17,10 @@ export default function FloatingCard({
   return (
     <div
       className={clsx(
-        'bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl',
-        'transform transition-all duration-700 ease-out',
+        'glass-card rounded-3xl p-6 shadow-sm border border-white/40',
+        'transform transition-all duration-500 ease-out',
         'animate-fade-in-up',
-        hover && 'hover:scale-105 hover:shadow-2xl hover:-translate-y-2',
+        hover && 'hover-premium',
         className
       )}
       style={{ animationDelay: `${delay}ms` }}

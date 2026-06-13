@@ -910,20 +910,20 @@ export default function Directory() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 appearance-none"
+                className="w-full px-4 py-3 border border-slate-200 rounded-2xl bg-white/60 backdrop-blur-sm focus:border-red-500 focus:outline-none transition-all duration-300 hover:border-slate-350 appearance-none text-slate-700 font-medium"
               >
                 <option value="">All Categories</option>
                 {Object.entries(CORRUPTION_CATEGORIES).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
               </select>
-              <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+              <Filter className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4.5 w-4.5 text-slate-400 pointer-events-none" />
             </div>
             <div className="relative">
               <select
                 value={minReports}
                 onChange={(e) => setMinReports(Number(e.target.value))}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/50 backdrop-blur-sm focus:border-red-500 focus:outline-none focus:ring-0 transition-all duration-300 hover:border-gray-300 appearance-none"
+                className="w-full px-4 py-3 border border-slate-200 rounded-2xl bg-white/60 backdrop-blur-sm focus:border-red-500 focus:outline-none transition-all duration-300 hover:border-slate-350 appearance-none text-slate-700 font-medium"
               >
                 <option value={1}>All Reports (1+)</option>
                 <option value={2}>Defaulters (2+)</option>
@@ -931,6 +931,7 @@ export default function Directory() {
                 <option value={5}>High Risk (5+)</option>
                 <option value={10}>Critical (10+)</option>
               </select>
+              <Filter className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4.5 w-4.5 text-slate-400 pointer-events-none" />
             </div>
           </div>
           
@@ -1130,7 +1131,7 @@ export default function Directory() {
                   All information is based on user submissions and should be verified independently.
                 </p>
                 <p className="text-yellow-700 leading-relaxed mt-2">
-                  <strong>Data Source:</strong> Real-time data from Supabase database aggregating all corruption reports. 
+                  <strong>Data Source:</strong> Real-time data from Firebase database aggregating all corruption reports. 
                   Last updated: {lastRefresh.toLocaleString()}
                 </p>
                 <p className="text-yellow-700 leading-relaxed mt-2">

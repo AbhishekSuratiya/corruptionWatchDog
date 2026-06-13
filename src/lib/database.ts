@@ -8,7 +8,9 @@ import {
   orderBy,
   limit,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  writeBatch,
+  doc
 } from 'firebase/firestore';
 import { CorruptionReport } from '../types';
 
@@ -498,6 +500,112 @@ export class DatabaseService {
     } catch (error) {
       console.error('Error in getAllReportsGrouped:', error);
       return { data: null, error };
+    }
+  }
+
+  // Seed database with sample corruption reports (100 documents)
+  static async seedDatabase(): Promise<{ success: boolean; error: any }> {
+    try {
+      const names = [
+        "Rajesh Kumar", "Amit Sharma", "Priya Patel", "Suresh Nair", "K. Venkatesh",
+        "Sanjay Gupta", "Anjali Desai", "Vikram Singh", "Meena Iyer", "Rahul Verma",
+        "Divya Reddy", "Sandeep Patil", "Sunil Rao", "Neha Joshi", "Abhay Mishra",
+        "Ramesh Gond", "Deepak Chawla", "Harish Salve", "Sunita Nair", "Arvind Kejriwal"
+      ];
+      const designations = [
+        "Senior RTO Inspector", "Municipal Ward Engineer", "Land Revenue Officer",
+        "Police Sub-Inspector", "Electrical Inspector", "Tax Assessment Officer",
+        "Food Safety Officer", "Health Inspector", "Education Department Clerk",
+        "Water Supply Engineer", "Passport Verification Officer", "RTO Clerk",
+        "Building Permission Officer"
+      ];
+      const cities = [
+        { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
+        { name: "Delhi", lat: 28.6139, lng: 77.2090 },
+        { name: "Bengaluru", lat: 12.9716, lng: 77.5946 },
+        { name: "Chennai", lat: 13.0827, lng: 80.2707 },
+        { name: "Kolkata", lat: 22.5726, lng: 88.3639 },
+        { name: "Hyderabad", lat: 17.3850, lng: 78.4867 },
+        { name: "Pune", lat: 18.5204, lng: 73.8567 },
+        { name: "Ahmedabad", lat: 23.0225, lng: 72.5714 },
+        { name: "Jaipur", lat: 26.9124, lng: 75.7873 },
+        { name: "Lucknow", lat: 26.8467, lng: 80.9462 },
+        { name: "Patna", lat: 25.5941, lng: 85.1376 },
+        { name: "Kochi", lat: 9.9312, lng: 76.2673 },
+        { name: "Indore", lat: 22.7196, lng: 75.8577 },
+        { name: "Bhopal", lat: 23.2599, lng: 77.4126 }
+      ];
+      const categories = ["bribery", "extortion", "embezzlement", "nepotism", "fraud"];
+      const statuses = ["pending", "verified", "disputed", "resolved"];
+
+      const reporterNames = ["Karan Johar", "Sunita Devi", "Rohan Gowda", "Arjun Kapoor", "Pooja Hegde", "Kabir Singh"];
+      const reporterEmails = ["karan@gmail.com", "sunita@dev.org", "rohan@gowda.in", "arjun@kapoor.com", "pooja@hegde.com", "kabir@singh.co"];
+
+      const batch = writeBatch(db);
+
+      // Generate 100 reports
+      for (let i = 1; i <= 100; i++) {
+        const cityObj = cities[Math.floor(Math.random() * cities.length)];
+        const personName = names[Math.floor(Math.random() * names.length)];
+        const designation = designations[Math.floor(Math.random() * designations.length)];
+        const category = categories[Math.floor(Math.random() * categories.length)];
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        const isAnon = Math.random() > 0.4;
+        
+        const amount = Math.floor(Math.random() * 45 + 5) * 1000; // between ₹5,000 and ₹50,000
+
+        let description = "";
+        if (category === "bribery") {
+          description = `Demanded a bribe of ₹${amount.toLocaleString('en-IN')} for processing a standard ${designation} approval application. The official hinted that without this facilitation payment, the file would sit at the bottom of the stack indefinitely.`;
+        } else if (category === "extortion") {
+          description = `Subjected to harassment and extortion by the officer who demanded ₹${amount.toLocaleString('en-IN')} under threat of issuing a sub-standard compliance notice or penalty. No legal receipt or paperwork was provided.`;
+        } else if (category === "embezzlement") {
+          description = `Spotted severe anomalies in public works project. Sanctioned funds of ₹${(amount * 5).toLocaleString('en-IN')} were supposedly spent on upgrades, but the materials used are clearly sub-standard, leaving the facility incomplete.`;
+        } else if (category === "nepotism") {
+          description = `Violated department protocols by appointing immediate family members to temporary contractual positions under the department, ignoring qualified candidates and competitive applications.`;
+        } else {
+          description = `Engaged in fraudulent document clearance. Issued approvals using false signatures and backdated verification stamps to bypass environmental and zoning restrictions.`;
+        }
+
+        const picsumCount = Math.floor(Math.random() * 3); // 0 to 2 images
+        const evidenceFiles = [];
+        for (let imgIdx = 1; imgIdx <= picsumCount; imgIdx++) {
+          evidenceFiles.push(`https://picsum.photos/seed/report_${i}_img_${imgIdx}/800/600`);
+        }
+
+        const reportData = {
+          corrupt_person_name: personName,
+          designation: designation,
+          address: `${cityObj.name} Office Area`,
+          area_region: cityObj.name,
+          latitude: cityObj.lat + (Math.random() - 0.5) * 0.05,
+          longitude: cityObj.lng + (Math.random() - 0.5) * 0.05,
+          description: description,
+          category: category,
+          approached_authorities: Math.random() > 0.5,
+          was_resolved: status === "resolved",
+          is_anonymous: isAnon,
+          reporter_name: isAnon ? null : reporterNames[Math.floor(Math.random() * reporterNames.length)],
+          reporter_email: isAnon ? null : reporterEmails[Math.floor(Math.random() * reporterEmails.length)],
+          evidence_files: evidenceFiles,
+          status: status,
+          upvotes: Math.floor(Math.random() * 50),
+          downvotes: Math.floor(Math.random() * 5),
+          dispute_count: status === "disputed" ? Math.floor(Math.random() * 3) + 1 : 0
+        };
+
+        const docRef = doc(collection(db, 'corruption_reports'));
+        batch.set(docRef, {
+          ...reportData,
+          created_at: serverTimestamp()
+        });
+      }
+
+      await batch.commit();
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Error seeding database:', error);
+      return { success: false, error };
     }
   }
 }

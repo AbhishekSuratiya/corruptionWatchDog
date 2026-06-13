@@ -59,24 +59,24 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
 
   return (
     <>
-      <header className="bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
+      <header className="bg-white/75 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo Section - Compact and modern */}
             <div className="flex items-center flex-shrink-0">
               <Link to="/" className="flex items-center space-x-3 group">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-red-500 rounded-xl blur-md opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
-                  <div className="relative p-2.5 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                  <div className="absolute inset-0 bg-red-500 rounded-2xl blur-md opacity-25 group-hover:opacity-40 transition-opacity duration-300"></div>
+                  <div className="relative p-2 bg-gradient-to-br from-red-600 to-rose-600 rounded-2xl shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
                     <Shield className="h-6 w-6 text-white" />
                     <AlertTriangle className="h-2.5 w-2.5 text-yellow-400 absolute -top-0.5 -right-0.5 animate-pulse" />
                   </div>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-red-600 bg-clip-text text-transparent group-hover:from-red-600 group-hover:to-red-800 transition-all duration-300">
+                  <h1 className="text-base font-bold bg-gradient-to-r from-slate-900 to-red-600 bg-clip-text text-transparent group-hover:from-red-600 group-hover:to-red-800 transition-all duration-300 tracking-tight">
                     Corruption Watchdog
                   </h1>
-                  <p className="text-xs text-gray-500 -mt-0.5">Fighting Corruption Together</p>
+                  <p className="text-[10px] font-semibold text-slate-400 tracking-wide uppercase -mt-0.5">Fighting Corruption Together</p>
                 </div>
               </Link>
             </div>
@@ -91,26 +91,26 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                   <div key={item.name} className="relative group">
                     <Link
                       to={item.href}
-                      className={`relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 transform hover:scale-105 ${
+                      className={`relative flex items-center justify-center w-11 h-11 rounded-2xl transition-all duration-300 transform hover:scale-[1.03] ${
                         active
                           ? item.href === '/admin'
-                            ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25'
-                            : 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25'
-                          : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200'
+                            ? 'bg-gradient-to-br from-purple-600 to-indigo-650 text-white shadow-md shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-red-600 to-rose-600 text-white shadow-md shadow-red-500/20'
+                          : 'text-slate-600 hover:text-red-600 hover:bg-red-50/50 border border-transparent hover:border-red-100/50'
                       }`}
                     >
                       <Icon className="h-5 w-5" />
                       
                       {/* Active indicator */}
                       {active && (
-                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
+                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-sm"></div>
                       )}
                     </Link>
                     
                     {/* Tooltip */}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1.5 bg-slate-900 text-white text-[11px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-md">
                       {item.name}
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                     </div>
                   </div>
                 );
@@ -118,7 +118,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
             </nav>
 
             {/* Enhanced Tablet Navigation - Show ALL navigation items */}
-            <nav className="hidden md:flex lg:hidden items-center space-x-1">
+            <nav className="hidden md:flex lg:hidden items-center space-x-1.5">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
@@ -127,15 +127,15 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                   <div key={item.name} className="relative group">
                     <Link
                       to={item.href}
-                      className={`relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                      className={`relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-300 transform hover:scale-[1.03] ${
                         active
                           ? item.href === '/admin'
-                            ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25'
-                            : 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25'
-                          : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200'
+                            ? 'bg-gradient-to-br from-purple-600 to-indigo-650 text-white shadow-md shadow-purple-500/20'
+                            : 'bg-gradient-to-br from-red-600 to-rose-600 text-white shadow-md shadow-red-500/20'
+                          : 'text-slate-600 hover:text-red-600 hover:bg-red-50/50 border border-transparent hover:border-red-100/50'
                       }`}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4.5 w-4.5" />
                       
                       {/* Active indicator */}
                       {active && (
@@ -144,9 +144,9 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                     </Link>
                     
                     {/* Tooltip for tablet */}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-md">
                       {item.shortName}
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                     </div>
                   </div>
                 );
@@ -156,7 +156,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
             {/* Auth Section - Clean and compact */}
             <div className="flex items-center space-x-3 flex-shrink-0">
               {loading ? (
-                <div className="w-10 h-10 bg-gray-200 rounded-xl animate-pulse"></div>
+                <div className="w-10 h-10 bg-slate-100 rounded-2xl animate-pulse"></div>
               ) : user ? (
                 <UserMenu user={user} />
               ) : (
@@ -164,30 +164,30 @@ export default function Header({ isMenuOpen, setIsMenuOpen }: HeaderProps) {
                   <div className="relative group">
                     <button
                       onClick={() => openAuthModal('login')}
-                      className="flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-all duration-300 transform hover:scale-105"
+                      className="flex items-center justify-center w-10 h-10 rounded-2xl text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 border border-transparent hover:border-blue-100/50 transition-all duration-300 transform hover:scale-[1.03]"
                     >
                       <LogIn className="w-5 h-5" />
                     </button>
                     
                     {/* Tooltip */}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1.5 bg-slate-900 text-white text-[11px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-md">
                       Sign In
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                     </div>
                   </div>
                   
                   <div className="relative group">
                     <button
                       onClick={() => openAuthModal('signup')}
-                      className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                      className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-red-600 to-rose-600 text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.03]"
                     >
                       <UserPlus className="w-5 h-5" />
                     </button>
                     
                     {/* Tooltip */}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1.5 bg-slate-900 text-white text-[11px] font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-md">
                       Sign Up
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
                     </div>
                   </div>
                 </div>

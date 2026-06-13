@@ -42,13 +42,13 @@ export default function ModernInput({
         <input
           id={inputId}
           className={clsx(
-            'block w-full rounded-xl border-2 bg-white/50 backdrop-blur-sm transition-all duration-300 ease-out',
-            'placeholder-gray-400 focus:outline-none focus:ring-0',
+            'block w-full rounded-2xl border bg-white/60 backdrop-blur-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            'placeholder-gray-400 focus:outline-none',
             icon ? 'pl-10 pr-4 py-3' : 'px-4 py-3',
             error 
-              ? 'border-red-300 focus:border-red-500 focus:bg-red-50/50' 
-              : 'border-gray-200 focus:border-red-500 focus:bg-white hover:border-gray-300',
-            'transform hover:scale-[1.02] focus:scale-[1.02]',
+              ? 'border-red-300 focus:border-red-500 focus:bg-red-50/30' 
+              : 'border-slate-200 focus:border-red-500 focus:bg-white/90 hover:border-slate-300',
+            'transform hover:translate-y-[-1px] focus:translate-y-[-1px]',
             className
           )}
           onFocus={() => setIsFocused(true)}
@@ -56,8 +56,8 @@ export default function ModernInput({
           {...props}
         />
         <div className={clsx(
-          'absolute inset-0 rounded-xl pointer-events-none transition-all duration-300',
-          isFocused ? 'ring-4 ring-red-500/20' : ''
+          'absolute inset-0 rounded-2xl pointer-events-none transition-all duration-300',
+          isFocused ? 'ring-4 ring-red-500/10 shadow-lg' : ''
         )} />
       </div>
       {error && (

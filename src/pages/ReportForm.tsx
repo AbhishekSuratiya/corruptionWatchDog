@@ -436,7 +436,7 @@ export default function ReportForm() {
         )}
 
         {/* Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="glass-card rounded-3xl border border-white/50 p-8 shadow-md transition-all duration-300">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* Anonymous Reporting Toggle */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
